@@ -1,0 +1,249 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique
+  logoUrl     String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  memberships TenantMembership[]
+  events      Event[]
+  categories           EventCategory[]
+  certificateTitle     String?
+  certificateBody      String?
+  certificateHours     Int?
+  certificateSigner    String?
+  certificateSignerUrl String?
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  name               String
+  email              String             @unique
+  passwordHash       String
+  emailVerified      Boolean            @default(false)
+  emailVerifyToken   String?
+  passwordResetToken String?
+  passwordResetExpiry DateTime?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  tenantMemberships  TenantMembership[]
+  auditLogs          AuditLog[]
+  registrations      Registration[]
+}
+
+model TenantMembership {
+  id        String     @id @default(uuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      TenantRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([tenantId, userId])
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  ORGANIZER
+  CHECKER
+  MEMBER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  FINISHED
+}
+
+model Event {
+  id            String         @id @default(uuid())
+  tenantId      String
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title         String
+  slug          String
+  description   String?
+  bannerUrl     String?
+  location      String?
+  isOnline      Boolean        @default(false)
+  onlineUrl     String?
+  startDate     DateTime
+  endDate       DateTime
+  capacity      Int
+  status        EventStatus    @default(DRAFT)
+  reminderSent  Boolean        @default(false)
+  categoryId    String?
+  category      EventCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  speakers      EventSpeaker[]
+  sponsors      EventSponsor[]
+  schedule      ScheduleItem[]
+  registrations Registration[]
+  certificateTitle         String?
+  certificateBody          String?
+  certificateHours         Int?
+  certificateSigner        String?
+  certificateSignerUrl     String?
+  certificateBackgroundUrl String?
+  certificateLayoutJson    Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([tenantId, slug])
+}
+
+model EventCategory {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  color    String?
+  events   Event[]
+
+  @@unique([tenantId, name])
+}
+
+model EventSpeaker {
+  id       String  @id @default(uuid())
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name     String
+  bio      String?
+  photoUrl String?
+  role     String?
+}
+
+model EventSponsor {
+  id       String  @id @default(uuid())
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name     String
+  logoUrl  String?
+  tier     String?
+}
+
+model ScheduleItem {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  speakerId   String?
+  location    String?
+  order       Int
+}
+
+enum RegistrationStatus {
+  CONFIRMED
+  WAITLIST
+  CANCELLED
+  TRANSFERRED
+}
+
+model Registration {
+  id               String             @id @default(uuid())
+  code             String             @unique
+  eventId          String
+  event            Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  email            String
+  cpf              String?            // criptografado (AES-256-GCM)
+  phone            String?
+  status           RegistrationStatus @default(CONFIRMED)
+  waitlistPosition Int?
+  checkedInAt      DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  transferredTo    String?
+  transferredFrom  String?
+  metadata         Json?
+  checkIn          CheckIn?
+  certificate      Certificate?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([eventId, status])
+  @@index([email, eventId])
+}
+
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CheckIn {
+  id             String       @id @default(uuid())
+  registrationId String       @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  checkedInAt    DateTime     @default(now())
+  operatorId     String?
+  deviceId       String?
+  syncedAt       DateTime?
+
+  @@index([eventId])
+}
+
+model Certificate {
+  id             String       @id @default(uuid())
+  registrationId String       @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  code           String       @unique
+  fileUrl        String
+  issuedAt       DateTime     @default(now())
+  downloadCount  Int          @default(0)
+}
+
+model EmailLog {
+  id        String      @id @default(uuid())
+  tenantId  String
+  to        String
+  subject   String
+  template  String
+  variables Json        @default("{}")
+  status    EmailStatus @default(PENDING)
+  attempts  Int         @default(0)
+  lastError String?
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([tenantId, createdAt])
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  DEAD
+}
+
+

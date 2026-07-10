@@ -1,0 +1,2 @@
+-- Inicialização do banco de dados do EventHub
+-- Tabelas e schemas serão gerenciados via Prisma Migrations

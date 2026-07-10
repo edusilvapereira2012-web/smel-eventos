@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{subject}}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      table-layout: fixed;
+      background-color: #0b0f19;
+      padding: 40px 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .header {
+      padding: 30px;
+      text-align: center;
+      background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+      border-bottom: 1px solid #1f2937;
+    }
+    .logo {
+      max-height: 50px;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+    }
+    .content {
+      padding: 40px 30px;
+      line-height: 1.6;
+      font-size: 16px;
+      color: #d1d5db;
+    }
+    .footer {
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      border-top: 1px solid #1f2937;
+      background-color: #0e131f;
+    }
+    .footer a {
+      color: #6366f1;
+      text-decoration: underline;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #6366f1;
+      color: #ffffff !important;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 20px 0;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #4f46e5;
+    }
+    .code-box {
+      background-color: #1f2937;
+      border: 1px dashed #4b5563;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 22px;
+      font-weight: bold;
+      color: #f3f4f6;
+      text-align: center;
+      letter-spacing: 2px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <table class="wrapper" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center">
+        <table class="container" width="100%" cellpadding="0" cellspacing="0">
+          <!-- Header -->
+          <tr>
+            <td class="header">
+              {{#if tenantLogoUrl}}
+                <img src="{{tenantLogoUrl}}" alt="{{tenantName}}" class="logo">
+              {{/if}}
+              <h1>{{tenantName}}</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td class="content">
+              {{{body}}}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td class="footer">
+              <p>&copy; {{year}} {{tenantName}}. Todos os direitos reservados.</p>
+              <p>Este é um e-mail automático enviado por <strong>SMEL-Plataforma de Eventos</strong>.</p>
+              <p style="margin-top: 15px;">
+                Para cancelar o recebimento de e-mails desta organização, <a href="{{appUrl}}/unsubscribe?tenant={{tenantId}}">clique aqui para se descadastrar</a>.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
