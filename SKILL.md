@@ -114,3 +114,25 @@ Ao processar uma solicitação de exclusão de dados de usuário (`DELETE /api/a
 1. Confirme que todos os campos de identificação pessoal (Nome, E-mail, CPF, Telefone) foram anonimizados no banco.
 2. Certifique-se de que os logs de auditoria históricos não contenham o IP e o User-Agent associados àquele usuário.
 3. Exclua quaisquer arquivos de assinatura digital ou personalizados pertencentes à organização caso a organização inteira seja removida.
+
+---
+
+## 🛡️ 5. Gestão de Superadmin e Cache de Desenvolvimento
+
+### 5.1. Verificação do Painel Superadmin
+*   Para testar acessos e regras do painel administrativo global, autentique-se com o e-mail: `valterpcjr@gmail.com`.
+*   Qualquer outra conta deve ser testada para certificar-se de que recebe `403 Forbidden` nas rotas do painel.
+
+### 5.2. Recuperando o Cache do Next.js (Módulos não encontrados)
+*   **Problema**: Se você rodar o build de produção (`pnpm build`) enquanto o servidor de desenvolvimento (`pnpm dev`) estiver em execução, o compilador do Next.js pode misturar arquivos estáticos de chunks Webpack, gerando erros HTTP 500 (`Cannot find module './xxx.js'`) e páginas em branco.
+*   **Solução**: 
+    1. Pare o processo local ativo (`Ctrl+C`).
+    2. Limpe a pasta cache de compilação:
+       ```bash
+       rm -rf apps/frontend/.next
+       ```
+    3. Reinicie o servidor de desenvolvimento:
+       ```bash
+       pnpm dev
+       ```
+

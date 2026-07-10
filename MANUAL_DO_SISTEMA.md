@@ -19,26 +19,51 @@ A plataforma utiliza um controle de acesso baseado em funções (RBAC - Role-Bas
 
 ---
 
-## 2. Acesso e Fluxo do Participante
+## 2. Acesso Global e Painel Superadmin
+
+Para fins de governança global do SaaS, existe uma função de **Superadmin** exclusiva e restrita no sistema.
+
+### Quem é o Superadmin?
+*   O único usuário com permissões de Superadmin é o e-mail: **`valterpcjr@gmail.com`**.
+*   Nenhum outro usuário cadastrado possui acesso a este nível administrativo, independentemente do cargo dele dentro das organizações.
+
+### O que o Superadmin pode fazer?
+Ao acessar a rota `/superadmin` (ou clicar em **Painel Superadmin** na página inicial), o usuário tem acesso ao **Painel de Gestão Global**:
+1.  **Monitoramento de Métricas Globais**: Visualizar a contagem total de organizações, usuários cadastrados, eventos criados e inscrições realizadas em toda a plataforma.
+2.  **Gestão de Organizações**: 
+    *   Listar todas as organizações com seus slugs, quantidade de membros e eventos.
+    *   **Ativar/Desativar Organização**: O Superadmin pode desativar qualquer organização.
+3.  **Gestão de Usuários**:
+    *   Listar todos os usuários da plataforma com estatísticas de participação e verificação de e-mail.
+    *   **Bloquear/Desbloquear Conta**: O Superadmin pode desativar o acesso de qualquer usuário ao sistema.
+
+### Regra de Negócio: Bloqueio de Organizações (isActive)
+*   **Os dados são excluídos?** Não. A exclusão de uma organização não ocorre fisicamente do banco de dados para fins de segurança jurídica e auditoria. Todos os eventos, inscrições de participantes, certificados emitidos e logs de auditoria permanecem **100% intactos**.
+*   **O que acontece quando é Desativada?** O middleware de validação (`TenantInterceptor`) bloqueia imediatamente qualquer operação ou rota associada a esta organização, retornando um erro `403 Forbidden` aos usuários.
+*   **Como reativar?** Se o Superadmin clicar em **Ativar** novamente no painel, o acesso é restabelecido na mesma hora e todos os dados voltam a ser exibidos perfeitamente.
+
+---
+
+## 3. Acesso e Fluxo do Participante
 
 ### Como o participante interage com o sistema?
 A plataforma **não possui uma área restrita (com login/senha)** voltada para os participantes. A experiência foi simplificada para ser direta e focada em comunicações por e-mail e páginas públicas:
 
-1. **Inscrição:** O participante acessa a página pública exclusiva do evento (`/e/[slug_do_evento]`), preenche o formulário e, ao confirmar, recebe um e-mail com o **QR Code da inscrição**.
-2. **Presença:** No dia do evento, a recepção escaneia o QR Code do participante por meio do link de credenciamento (`/checkin/[eventId]`) para validar e confirmar a sua presença.
-3. **Certificados:** Finalizado o evento, o participante recebe por e-mail um link exclusivo para a página de validação e download (`/certificate/[codigo_verificador]`), onde ele pode obter o PDF de participação.
+1.  **Inscrição:** O participante acessa a página pública exclusiva do evento (`/e/[slug_do_evento]`), preenche o formulário e, ao confirmar, recebe um e-mail com o **QR Code da inscrição**.
+2.  **Presença:** No dia do evento, a recepção escaneia o QR Code do participante por meio do link de credenciamento (`/checkin/[eventId]`) para validar e confirmar a sua presença.
+3.  **Certificados:** Finalizado o evento, o participante recebe por e-mail um link exclusivo para a página de validação e download (`/certificate/[codigo_verificador]`), onde ele pode obter o PDF de participação.
 
 ---
 
-## 3. Perguntas Frequentes (FAQ)
+## 4. Perguntas Frequentes (FAQ)
 
 ### O participante precisa preencher os dados de cadastro toda vez que for se inscrever em um novo evento?
 **Sim.** Atualmente, o participante precisa preencher seu Nome, E-mail, CPF e Telefone todas as vezes.
 
-* **Por que é assim atualmente?**
-  1. **Segurança (LGPD):** Fazer buscas automáticas de dados no banco ao digitar o CPF ou E-mail geraria uma brecha de privacidade, permitindo que terceiros descobrissem dados pessoais de outros usuários.
-  2. **Sem Conta de Participante:** Por não possuírem uma conta com login e senha na plataforma, não há uma sessão de usuário ativa que possa identificar o participante no navegador e auto-preencher os dados dele de forma blindada.
+*   **Por que é assim atualmente?**
+    1.  **Segurança (LGPD):** Fazer buscas automáticas de dados no banco ao digitar o CPF ou E-mail geraria uma brecha de privacidade, permitindo que terceiros descobrissem dados pessoais de outros usuários.
+    2.  **Sem Conta de Participante:** Por não possuírem uma conta com login e senha na plataforma, não há uma sessão de usuário ativa que possa identificar o participante no navegador e auto-preencher os dados dele de forma blindada.
 
-* **Alternativas Futuras de Melhoria:**
-  1. **Autocompletar Local (LocalStorage):** Salvar os dados do último formulário preenchido localmente no navegador do participante. Assim, quando ele abrir outro formulário de evento no mesmo dispositivo, os dados serão preenchidos automaticamente.
-  2. **Cadastro do Participante (Portal do Participante):** Criar um fluxo de login simplificado (ou login único/social) para os participantes gerenciarem suas inscrições.
+*   **Alternativas Futuras de Melhoria:**
+    1.  **Autocompletar Local (LocalStorage):** Salvar os dados do último formulário preenchido localmente no navegador do participante. Assim, quando ele abrir outro formulário de evento no mesmo dispositivo, os dados serão preenchidos automaticamente.
+    2.  **Cadastro do Participante (Portal do Participante):** Criar um fluxo de login simplificado (ou login único/social) para os participantes gerenciarem suas inscrições.

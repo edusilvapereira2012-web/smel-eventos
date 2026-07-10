@@ -136,3 +136,22 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * Otimização de Dockerfiles para multi-stage com isolamento de privilégios rodando sob o usuário `node` (non-root).
 * PM2 em clustering para API NestJS com script `ecosystem.config.js`.
 * Integração de `helmet` e CORS controlados na API REST.
+
+---
+
+## 5. Gestão Global de Superadmin e Localização PT-BR (Leva 11)
+
+### 5.1. Painel Global Superadmin
+* **Autenticação Restrita**: Rota do painel de administração global (`/superadmin`) e seus endpoints backend correspondentes protegidos por `SuperadminGuard`.
+* **Identidade Única**: O e-mail `valterpcjr@gmail.com` é configurado como o único Superadmin do ecossistema. Qualquer requisição de outros usuários a endpoints sob o escopo do guard é rejeitada com `403 Forbidden`.
+* **Segurança de Escopo (`@SkipTenant`)**: Os endpoints do Superadmin usam a anotação `@SkipTenant()` para ignorar o requisito padrão de cabeçalho `X-Tenant-ID`, permitindo consultas globais de estatísticas, tenants e usuários.
+
+### 5.2. Bloqueio Seguro e Conservação de Histórico (Auditoria)
+* **Ativação/Desativação de Organizações**: A desativação de organizações altera o campo `isActive` para `false` no modelo `Tenant`.
+* **Proteção de Dados Integros**: Em conformidade com a retenção para segurança de auditoria legal, nenhuma exclusão física de banco de dados (`DELETE`) é efetuada ao desativar organizações ou usuários.
+* **Middleware Interceptor**: O `TenantInterceptor` intercepta todas as rotas com escopo de tenant e bloqueia imediatamente requisições destinadas a organizações inativas com `403 Forbidden ("Tenant is inactive.")`, assegurando isolamento imediato de acesso sem destruição de dados.
+
+### 5.3. Localização Padrão (Português-BR)
+* **Tradução de Status**: Todos os status de eventos no banco de dados (`DRAFT`, `PUBLISHED`, `FINISHED`, `CANCELLED`) são traduzidos e mapeados de forma consistente no frontend utilizando a constante `EVENT_STATUS_LABELS` (`Rascunho`, `Publicado`, `Finalizado`, `Cancelado`).
+* **Experiência do Usuário (UX/UI)**: Mapeamento de badges coloridos e listagens localizadas para garantir uma interface nativa em português sem dependência de pacotes de tradução externos pesados.
+
