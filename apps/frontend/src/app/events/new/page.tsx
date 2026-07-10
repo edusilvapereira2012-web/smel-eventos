@@ -153,7 +153,7 @@ export default function NewEventPage() {
       <div className="relative z-10 max-w-4xl w-full mx-auto px-6 mt-8 flex-1 flex flex-col space-y-6">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Configurar Novo Evento</h1>
-          <p className="text-slate-400 text-sm mt-1">Preencha os dados do evento. Ele será criado como rascunho (DRAFT) para você ajustar a programação.</p>
+          <p className="text-slate-400 text-sm mt-1">Preencha os dados do evento. Ele será criado como rascunho para você ajustar a programação.</p>
         </div>
 
         {error && (

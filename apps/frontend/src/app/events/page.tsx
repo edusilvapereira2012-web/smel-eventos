@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
 import { api } from '@/lib/api';
-import { Event, EventCategory } from '@/lib/events.types';
+import { Event, EventCategory, EVENT_STATUS_LABELS } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
 import { PwaInstallButton } from '@/components/pwa-install-button';
 import {
@@ -243,10 +243,10 @@ export default function EventsListPage() {
                 className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors"
               >
                 <option value="">Qualquer Status</option>
-                <option value="DRAFT">Rascunho (DRAFT)</option>
-                <option value="PUBLISHED">Publicado (PUBLISHED)</option>
-                <option value="FINISHED">Finalizado (FINISHED)</option>
-                <option value="CANCELLED">Cancelado (CANCELLED)</option>
+                <option value="DRAFT">Rascunho</option>
+                <option value="PUBLISHED">Publicado</option>
+                <option value="FINISHED">Finalizado</option>
+                <option value="CANCELLED">Cancelado</option>
               </select>
             </div>
 
@@ -328,7 +328,7 @@ export default function EventsListPage() {
                       
                       {/* Status Badge */}
                       <span className={`absolute top-3 right-3 text-2xs font-extrabold uppercase tracking-wide border px-2 py-0.5 rounded-full ${statusColors[event.status] || 'bg-slate-900'}`}>
-                        {event.status}
+                        {EVENT_STATUS_LABELS[event.status] || event.status}
                       </span>
                     </div>
 

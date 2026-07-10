@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
 import { api } from '@/lib/api';
-import { Event, EventCategory, EventSpeaker, EventSponsor, ScheduleItem } from '@/lib/events.types';
+import { Event, EventCategory, EventSpeaker, EventSponsor, ScheduleItem, EVENT_STATUS_LABELS } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
 import EventDashboard from '@/components/EventDashboard';
 import CertificateEditor from '@/components/CertificateEditor';
@@ -535,7 +535,7 @@ export default function EventDetailPage() {
     setSuccess(null);
     try {
       const response = await api.patch(`/events/${eventId}/${action}`);
-      setSuccess(`Evento atualizado para status: ${response.data.status}`);
+      setSuccess(`Evento atualizado para status: ${EVENT_STATUS_LABELS[response.data.status] || response.data.status}`);
       loadAll();
     } catch (err: any) {
       setError(err.response?.data?.message || `Erro ao realizar ação: ${action}`);
@@ -810,7 +810,7 @@ export default function EventDetailPage() {
         </div>
         <div className="flex items-center space-x-3">
           <span className={`text-2xs font-extrabold uppercase tracking-wide border px-2.5 py-0.5 rounded-full ${statusColors[event.status]}`}>
-            {event.status}
+            {EVENT_STATUS_LABELS[event.status] || event.status}
           </span>
           <a
             href={`/e/${event.slug}`}

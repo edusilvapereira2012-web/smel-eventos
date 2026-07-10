@@ -15,6 +15,9 @@ describe('ReportsService', () => {
   let prisma: jest.Mocked<PrismaService>;
 
   const mockPrisma = {
+    user: {
+      findUnique: jest.fn(),
+    },
     event: {
       findFirst: jest.fn(),
     },
@@ -49,6 +52,7 @@ describe('ReportsService', () => {
     prisma = module.get(PrismaService);
 
     jest.clearAllMocks();
+    mockPrisma.user.findUnique.mockResolvedValue({ email: 'normal@test.com' });
   });
 
   describe('exportCsv / exportExcel', () => {
@@ -96,6 +100,18 @@ describe('ReportsService', () => {
 
       expect(result.csvContent).toBeDefined();
       expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('exportação sensível com superadmin (valterpcjr@gmail.com) sem membership → exporta com sucesso', async () => {
+      mockPrisma.event.findFirst.mockResolvedValue(mockEvent);
+      mockPrisma.user.findUnique.mockResolvedValue({ email: 'valterpcjr@gmail.com' });
+      mockPrisma.registration.findMany.mockResolvedValue(mockRegistrations);
+
+      const result = await service.exportCsv('event-123', true, 'tenant-123', 'user-1', '127.0.0.1', 'Mozilla');
+
+      expect(result.csvContent).toBeDefined();
+      expect(result.eventSlug).toBe('test-event');
+      expect(mockPrisma.auditLog.create).toHaveBeenCalled();
     });
   });
 

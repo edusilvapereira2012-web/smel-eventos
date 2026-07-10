@@ -117,4 +117,13 @@ describe('PermissionGuard', () => {
       undefined,
     );
   });
+
+  it('should return true immediately if user is superadmin (valterpcjr@gmail.com)', async () => {
+    mockReflector.getAllAndOverride.mockReturnValue('events.create');
+    const context = createMockExecutionContext({ id: 'user-1', email: 'valterpcjr@gmail.com' });
+
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
+    expect(mockPrisma.tenantMembership.findUnique).not.toHaveBeenCalled();
+  });
 });

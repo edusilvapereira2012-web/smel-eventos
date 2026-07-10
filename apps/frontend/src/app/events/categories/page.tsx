@@ -148,7 +148,7 @@ export default function CategoriesPage() {
     }
   };
 
-  const getPresetOrCustomBadgeClass = (catColor: string | null) => {
+  const getPresetOrCustomBadgeClass = (catColor: string | null | undefined) => {
     const preset = COLOR_PRESETS.find(p => p.value.toLowerCase() === (catColor || '').toLowerCase());
     if (preset) return preset.bgClass;
     return 'text-slate-200 border-slate-700 bg-slate-800/40';

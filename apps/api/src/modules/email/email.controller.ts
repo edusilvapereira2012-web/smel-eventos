@@ -160,18 +160,22 @@ export class EmailController {
     const tenantId = req.headers['x-tenant-id'] as string;
     const userId = req.user?.id;
 
-    // Valida se o usuário é OWNER do inquilino
-    const membership = await this.prisma.tenantMembership.findUnique({
-      where: {
-        tenantId_userId: {
-          tenantId,
-          userId,
-        },
-      },
-    });
+    const isSuperAdmin = req.user?.email === 'valterpcjr@gmail.com';
 
-    if (!membership || membership.role !== 'OWNER') {
-      throw new ForbiddenException('Apenas o proprietário (OWNER) do inquilino pode realizar esta ação.');
+    if (!isSuperAdmin) {
+      // Valida se o usuário é OWNER do inquilino
+      const membership = await this.prisma.tenantMembership.findUnique({
+        where: {
+          tenantId_userId: {
+            tenantId,
+            userId,
+          },
+        },
+      });
+
+      if (!membership || membership.role !== 'OWNER') {
+        throw new ForbiddenException('Apenas o proprietário (OWNER) do inquilino pode realizar esta ação.');
+      }
     }
 
     // Busca todos os logs DEAD

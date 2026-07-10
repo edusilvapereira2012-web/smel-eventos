@@ -25,12 +25,14 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { PushModule } from './modules/push/push.module';
+import { SuperadminModule } from './modules/superadmin/superadmin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
+    SuperadminModule,
     EmailModule,
     CertificatesModule,
     AuditLogModule,

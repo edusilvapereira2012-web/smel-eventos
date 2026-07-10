@@ -113,6 +113,11 @@ export default function Home() {
                 </div>
 
                 <div className="pt-4 flex justify-end space-x-3">
+                  {user.email === 'valterpcjr@gmail.com' && (
+                    <Button onClick={() => router.push('/superadmin')} variant="outline" className="border-violet-850/50 bg-violet-950/20 hover:bg-violet-900/35 text-violet-300 hover:text-white font-bold py-2 px-6 rounded-lg">
+                      Painel Superadmin
+                    </Button>
+                  )}
                   {hasPermission('tenants.update') && (
                     <Button onClick={() => router.push('/admin/email/logs')} variant="outline" className="border-slate-800 bg-slate-900/30 hover:bg-slate-850 text-slate-300 hover:text-white font-bold py-2 px-6 rounded-lg">
                       Monitor de E-mails
@@ -126,9 +131,16 @@ export default function Home() {
             ) : (
               <div className="p-6 bg-slate-900/60 rounded-xl border border-slate-800/60 text-center space-y-3">
                 <p className="text-sm text-slate-400">Você ainda não faz parte de nenhuma organização.</p>
-                <Button onClick={() => router.push('/tenants/new')} className="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
-                  Criar Primeira Organização
-                </Button>
+                <div className="flex justify-center space-x-3">
+                  {user.email === 'valterpcjr@gmail.com' && (
+                    <Button onClick={() => router.push('/superadmin')} className="bg-violet-800 hover:bg-violet-700 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
+                      Painel Superadmin
+                    </Button>
+                  )}
+                  <Button onClick={() => router.push('/tenants/new')} className="bg-slate-700 hover:bg-slate-650 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
+                    Criar Primeira Organização
+                  </Button>
+                </div>
               </div>
             )}
           </div>

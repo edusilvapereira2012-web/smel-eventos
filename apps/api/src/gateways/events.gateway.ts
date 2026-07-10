@@ -53,6 +53,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      if (payload.email === 'valterpcjr@gmail.com') {
+        this.logger.log(`Superadmin ${userId} connected to namespace ${namespace}`);
+        return;
+      }
+
       // Verify tenant membership
       const membership = await this.prisma.tenantMembership.findUnique({
         where: {
