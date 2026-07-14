@@ -60,6 +60,11 @@ export class UploadService implements OnModuleInit {
       { 'Content-Type': file.mimetype }
     );
 
+    const externalUrl = this.configService.get<string>('MINIO_EXTERNAL_URL');
+    if (externalUrl) {
+      return `${externalUrl}/${this.bucketName}/${filename}`;
+    }
+
     const endPoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
     const port = this.configService.get<number>('MINIO_PORT') || 9000;
     

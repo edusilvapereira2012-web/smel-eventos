@@ -37,6 +37,10 @@ Ao acessar a rota `/superadmin` (ou clicar em **Painel Superadmin** na página i
     *   Listar todos os usuários da plataforma com estatísticas de participação e verificação de e-mail.
     *   **Bloquear/Desbloquear Conta**: O Superadmin pode desativar o acesso de qualquer usuário ao sistema.
 
+### Segurança e Criação de Contas (Hardening)
+*   **Auto-cadastro desativado**: Para evitar a criação indiscriminada de novas contas organizadoras sem validação prévia, o link de auto-cadastro na tela de login foi removido. Novos organizadores devem ter suas contas criadas diretamente pelo Superadmin ou por um proprietário (Owner) através de convites internos.
+*   **Interface de Produção Limpa**: O sistema está 100% livre de referências internas de desenvolvimento, como tags de levas ou badges de depuração, garantindo uma identidade visual limpa e profissional para a prefeitura e parceiros.
+
 ### Regra de Negócio: Bloqueio de Organizações (isActive)
 *   **Os dados são excluídos?** Não. A exclusão de uma organização não ocorre fisicamente do banco de dados para fins de segurança jurídica e auditoria. Todos os eventos, inscrições de participantes, certificados emitidos e logs de auditoria permanecem **100% intactos**.
 *   **O que acontece quando é Desativada?** O middleware de validação (`TenantInterceptor`) bloqueia imediatamente qualquer operação ou rota associada a esta organização, retornando um erro `403 Forbidden` aos usuários.

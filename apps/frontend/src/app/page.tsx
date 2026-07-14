@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@/components/ui/button';
 import { TenantSelector } from '@/components/tenant-selector';
 import { PwaInstallButton } from '@/components/pwa-install-button';
-import { Shield, Sparkles, Building, User, LogOut, CheckCircle2 } from 'lucide-react';
+import { Shield, Building, User, LogOut, CheckCircle2 } from 'lucide-react';
 
 export default function Home() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -77,10 +77,6 @@ export default function Home() {
         <div className="md:col-span-2 space-y-8">
           <div className="p-8 bg-slate-900/30 rounded-2xl border border-slate-900 backdrop-blur-xl space-y-6 shadow-2xl">
             <div className="space-y-2">
-              <div className="inline-flex items-center space-x-2 bg-violet-950/40 border border-violet-900/50 px-3 py-1 rounded-full text-xs font-semibold text-violet-400">
-                <Sparkles className="h-3 w-3" />
-                <span>SMEL-Plataforma de Eventos Leva 03 — Multi-Tenant + RBAC</span>
-              </div>
               <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-350">
                 Olá, {user.name}!
               </h1>

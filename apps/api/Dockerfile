@@ -2,6 +2,7 @@ FROM node:20-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 # Copiar arquivos de definição de workspace do monorepo
@@ -24,9 +25,9 @@ RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api run build
 
 # Target de Produção
-FROM node:20-alpine AS prod
-WORKDIR /app
+FROM base AS prod
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/prisma ./apps/api/prisma

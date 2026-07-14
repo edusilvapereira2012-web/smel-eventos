@@ -11,6 +11,7 @@ export const envSchema = z.object({
   MINIO_SECRET_KEY: z.string(),
   MINIO_BUCKET_EVENTS: z.string(),
   MINIO_BUCKET_CERTIFICATES: z.string(),
+  MINIO_EXTERNAL_URL: z.string().url().optional(),
   JWT_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
   SMTP_HOST: z.string(),

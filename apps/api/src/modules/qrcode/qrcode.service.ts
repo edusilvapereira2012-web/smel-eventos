@@ -39,10 +39,15 @@ export class QrcodeService implements OnModuleInit {
 
     const objectName = `qrcodes/${registrationId}.png`;
     
-    const endPoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
-    const port = this.configService.get<number>('MINIO_PORT') || 9000;
-    const publicHost = endPoint === 'minio' ? 'localhost' : endPoint;
-    const publicUrl = `http://${publicHost}:${port}/${this.bucketName}/${objectName}`;
+    const externalUrl = this.configService.get<string>('MINIO_EXTERNAL_URL');
+    const publicUrl = externalUrl
+      ? `${externalUrl}/${this.bucketName}/${objectName}`
+      : (() => {
+          const endPoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
+          const port = this.configService.get<number>('MINIO_PORT') || 9000;
+          const publicHost = endPoint === 'minio' ? 'localhost' : endPoint;
+          return `http://${publicHost}:${port}/${this.bucketName}/${objectName}`;
+        })();
 
     try {
       await this.minioClient.statObject(this.bucketName, objectName);
