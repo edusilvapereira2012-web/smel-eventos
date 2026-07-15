@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@/components/ui/button';
 import { TenantSelector } from '@/components/tenant-selector';
 import { PwaInstallButton } from '@/components/pwa-install-button';
-import { Shield, Building, User, LogOut, CheckCircle2 } from 'lucide-react';
+import { Shield, Building, User, LogOut, CheckCircle2, BookOpen } from 'lucide-react';
 
 export default function Home() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -108,7 +108,11 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end space-x-3">
+                <div className="pt-4 flex justify-end space-x-3 flex-wrap gap-2">
+                  <Button onClick={() => router.push('/manual')} variant="outline" className="border-slate-800 bg-slate-900/30 hover:bg-slate-850 text-slate-350 hover:text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2">
+                    <BookOpen className="h-4.5 w-4.5 text-violet-400" />
+                    Manual do Sistema
+                  </Button>
                   {user.email === 'valterpcjr@gmail.com' && (
                     <Button onClick={() => router.push('/superadmin')} variant="outline" className="border-violet-850/50 bg-violet-950/20 hover:bg-violet-900/35 text-violet-300 hover:text-white font-bold py-2 px-6 rounded-lg">
                       Painel Superadmin
