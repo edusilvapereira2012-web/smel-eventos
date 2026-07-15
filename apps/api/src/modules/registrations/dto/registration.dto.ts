@@ -18,6 +18,10 @@ export class CreateRegistrationDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  workshopIds?: string[];
 }
 
 export class TransferRegistrationDto {

@@ -136,7 +136,7 @@ export class RegistrationsService {
         waitlistPosition = waitlistCount + 1;
       }
 
-      return tx.registration.create({
+      const reg = await tx.registration.create({
         data: {
           code,
           eventId,
@@ -152,6 +152,72 @@ export class RegistrationsService {
           event: true,
         },
       });
+
+      if (status === RegistrationStatus.CONFIRMED && dto.workshopIds && dto.workshopIds.length > 0) {
+        const eventMax = event.maxWorkshops || 0;
+        if (eventMax > 0 && dto.workshopIds.length > eventMax) {
+          throw new BadRequestException(
+            `Você selecionou ${dto.workshopIds.length} oficinas, mas o limite para este evento é de ${eventMax} oficinas.`,
+          );
+        }
+
+        const workshops = await tx.workshop.findMany({
+          where: {
+            id: { in: dto.workshopIds },
+            eventId,
+          },
+        });
+
+        if (workshops.length !== dto.workshopIds.length) {
+          throw new BadRequestException('Uma ou mais oficinas selecionadas não são válidas.');
+        }
+
+        // Lock workshops to avoid concurrency issues (sorted to prevent deadlocks)
+        const sortedIds = [...dto.workshopIds].sort();
+        for (const wId of sortedIds) {
+          await tx.$queryRaw`
+            SELECT id FROM "Workshop" WHERE id = ${wId} FOR UPDATE
+          `;
+        }
+
+        // Validate capacities and overlap
+        for (let i = 0; i < workshops.length; i++) {
+          const w = workshops[i];
+          const currentCount = await tx.workshopEnrollment.count({
+            where: { workshopId: w.id },
+          });
+
+          if (currentCount >= w.capacity) {
+            throw new BadRequestException(`Vagas esgotadas para a oficina "${w.title}".`);
+          }
+
+          for (let j = i + 1; j < workshops.length; j++) {
+            const other = workshops[j];
+            const s1 = new Date(w.startTime).getTime();
+            const e1 = new Date(w.endTime).getTime();
+            const s2 = new Date(other.startTime).getTime();
+            const e2 = new Date(other.endTime).getTime();
+
+            if (s1 < e2 && s2 < e1) {
+              throw new BadRequestException(
+                `Conflito de horário: as oficinas "${w.title}" e "${other.title}" coincidem.`,
+              );
+            }
+          }
+        }
+
+        // Create enrollments
+        for (const wId of dto.workshopIds) {
+          await tx.workshopEnrollment.create({
+            data: {
+              registrationId: reg.id,
+              workshopId: wId,
+            },
+          });
+        }
+      }
+
+      return reg;
     });
 
     // 3. Post-transaction operations

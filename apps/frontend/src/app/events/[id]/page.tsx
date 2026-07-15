@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
 import { api } from '@/lib/api';
-import { Event, EventCategory, EventSpeaker, EventSponsor, ScheduleItem, EVENT_STATUS_LABELS } from '@/lib/events.types';
+import { Event, EventCategory, EventSpeaker, EventSponsor, ScheduleItem, EVENT_STATUS_LABELS, Workshop } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
 import EventDashboard from '@/components/EventDashboard';
 import CertificateEditor from '@/components/CertificateEditor';
@@ -34,6 +34,7 @@ import {
   Award,
   Info,
   Upload,
+  Users,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -47,7 +48,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'details' | 'speakers' | 'sponsors' | 'schedule' | 'registrations' | 'checkin' | 'certificates'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'details' | 'speakers' | 'sponsors' | 'schedule' | 'workshops' | 'registrations' | 'checkin' | 'certificates'>('dashboard');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -59,6 +60,7 @@ export default function EventDetailPage() {
   const [speakers, setSpeakers] = useState<EventSpeaker[]>([]);
   const [sponsors, setSponsors] = useState<EventSponsor[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
 
   // --- FORM STATES FOR TAB 1 (DETAILS) ---
   const [title, setTitle] = useState('');
@@ -70,6 +72,7 @@ export default function EventDetailPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [capacity, setCapacity] = useState<number>(100);
+  const [maxWorkshops, setMaxWorkshops] = useState<number>(0);
   const [categoryId, setCategoryId] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -86,7 +89,7 @@ export default function EventDetailPage() {
   const [layoutMode, setLayoutMode] = useState<'standard' | 'custom'>('standard');
 
   // --- INLINE FORM MODAL STATES ---
-  const [modalOpen, setModalOpen] = useState<'speaker' | 'sponsor' | 'schedule' | null>(null);
+  const [modalOpen, setModalOpen] = useState<'speaker' | 'sponsor' | 'schedule' | 'workshop' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -109,6 +112,15 @@ export default function EventDetailPage() {
   const [schLocation, setSchLocation] = useState('');
   const [schSpeakerId, setSchSpeakerId] = useState('');
 
+  // Workshop Form
+  const [workTitle, setWorkTitle] = useState('');
+  const [workDesc, setWorkDesc] = useState('');
+  const [workStart, setWorkStart] = useState('');
+  const [workEnd, setWorkEnd] = useState('');
+  const [workCapacity, setWorkCapacity] = useState<number>(30);
+  const [workLocation, setWorkLocation] = useState('');
+  const [workSpeakerId, setWorkSpeakerId] = useState('');
+
   // --- REGISTRATIONS STATE ---
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -116,6 +128,13 @@ export default function EventDetailPage() {
   const [regStatus, setRegStatus] = useState<string>('');
   const [regLoading, setRegLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+
+  // --- WORKSHOP ENROLLMENTS MODAL STATE ---
+  const [enrollmentsModalOpen, setEnrollmentsModalOpen] = useState(false);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
+  const [workshopEnrollments, setWorkshopEnrollments] = useState<any[]>([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+  const [enrollmentsError, setEnrollmentsError] = useState<string | null>(null);
 
   // Transfer Registration form states
   const [transferModalOpen, setTransferModalOpen] = useState(false);
@@ -292,20 +311,23 @@ export default function EventDetailPage() {
       setOnlineUrl(ev.onlineUrl || '');
       setCategoryId(ev.categoryId || '');
       setCapacity(ev.capacity);
+      setMaxWorkshops(ev.maxWorkshops || 0);
       
       // format dates to fit datetime-local input
       if (ev.startDate) setStartDate(new Date(ev.startDate).toISOString().slice(0, 16));
       if (ev.endDate) setEndDate(new Date(ev.endDate).toISOString().slice(0, 16));
 
       // Fetch subresources
-      const [spRes, sponRes, schRes] = await Promise.all([
+      const [spRes, sponRes, schRes, workRes] = await Promise.all([
         api.get(`/events/${eventId}/speakers`),
         api.get(`/events/${eventId}/sponsors`),
         api.get(`/events/${eventId}/schedule`),
+        api.get(`/events/${eventId}/workshops`),
       ]);
       setSpeakers(spRes.data);
       setSponsors(sponRes.data);
       setSchedule(schRes.data);
+      setWorkshops(workRes.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Falha ao carregar dados do evento.');
     } finally {
@@ -519,6 +541,7 @@ export default function EventDetailPage() {
         endDate: new Date(endDate).toISOString(),
         capacity: Number(capacity),
         categoryId: categoryId || null,
+        maxWorkshops: Number(maxWorkshops),
       };
       await api.patch(`/events/${eventId}`, payload);
       setSuccess('Detalhes do evento atualizados com sucesso.');
@@ -712,6 +735,101 @@ export default function EventDetailPage() {
     }
   };
 
+  const openWorkshopModal = (item?: Workshop) => {
+    setModalError(null);
+    if (item) {
+      setEditingId(item.id);
+      setWorkTitle(item.title);
+      setWorkDesc(item.description || '');
+      setWorkStart(item.startTime ? new Date(item.startTime).toISOString().slice(0, 16) : '');
+      setWorkEnd(item.endTime ? new Date(item.endTime).toISOString().slice(0, 16) : '');
+      setWorkCapacity(item.capacity);
+      setWorkLocation(item.location || '');
+      setWorkSpeakerId(item.speakerId || '');
+    } else {
+      setEditingId(null);
+      setWorkTitle('');
+      setWorkDesc('');
+      setWorkStart('');
+      setWorkEnd('');
+      setWorkCapacity(30);
+      setWorkLocation('');
+      setWorkSpeakerId('');
+    }
+    setModalOpen('workshop');
+  };
+
+  const handleSaveWorkshop = async () => {
+    setModalError(null);
+    if (!workTitle || !workStart || !workEnd || !workCapacity) {
+      setModalError('Título, horário de início, término e capacidade são obrigatórios.');
+      return;
+    }
+    try {
+      const payload = {
+        title: workTitle,
+        description: workDesc || null,
+        startTime: new Date(workStart).toISOString(),
+        endTime: new Date(workEnd).toISOString(),
+        capacity: Number(workCapacity),
+        location: workLocation || null,
+        speakerId: workSpeakerId || null,
+      };
+
+      if (editingId) {
+        await api.patch(`/events/${eventId}/workshops/${editingId}`, payload);
+      } else {
+        await api.post(`/events/${eventId}/workshops`, payload);
+      }
+
+      setModalOpen(null);
+      loadAll();
+    } catch (err: any) {
+      setModalError(err.response?.data?.message || 'Falha ao salvar oficina.');
+    }
+  };
+
+  const handleDeleteWorkshop = async (id: string) => {
+    if (!confirm('Remover esta oficina?')) return;
+    try {
+      await api.delete(`/events/${eventId}/workshops/${id}`);
+      loadAll();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Falha ao deletar oficina.');
+    }
+  };
+
+  const openEnrollmentsModal = async (workshop: Workshop) => {
+    setSelectedWorkshop(workshop);
+    setWorkshopEnrollments([]);
+    setEnrollmentsError(null);
+    setLoadingEnrollments(true);
+    setEnrollmentsModalOpen(true);
+    try {
+      const response = await api.get(`/events/${eventId}/workshops/${workshop.id}/enrollments`);
+      setWorkshopEnrollments(response.data);
+    } catch (err: any) {
+      setEnrollmentsError(err.response?.data?.message || 'Falha ao carregar inscritos.');
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
+
+  const handleCancelEnrollment = async (workshopId: string, registrationId: string) => {
+    if (!confirm('Deseja realmente remover este participante da oficina?')) return;
+    setEnrollmentsError(null);
+    try {
+      await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${registrationId}`);
+      // Refresh list
+      const response = await api.get(`/events/${eventId}/workshops/${workshopId}/enrollments`);
+      setWorkshopEnrollments(response.data);
+      // Reload workshops list to update remaining spots
+      loadAll();
+    } catch (err: any) {
+      setEnrollmentsError(err.response?.data?.message || 'Falha ao remover participante.');
+    }
+  };
+
   // Reordering up/down
   const handleMoveScheduleItem = async (index: number, direction: 'up' | 'down') => {
     const newItems = [...schedule];
@@ -844,13 +962,14 @@ export default function EventDetailPage() {
 
         {/* Tab Selector */}
         <div className="flex border-b border-slate-900 space-x-6 overflow-x-auto scrollbar-none whitespace-nowrap">
-          {(['dashboard', 'details', 'speakers', 'sponsors', 'schedule', 'registrations', 'checkin', 'certificates'] as const).map((tab) => {
+          {(['dashboard', 'details', 'speakers', 'sponsors', 'schedule', 'workshops', 'registrations', 'checkin', 'certificates'] as const).map((tab) => {
             const labels = {
               dashboard: 'Dashboard & Relatórios',
               details: 'Editar Detalhes',
               speakers: `Palestrantes (${speakers.length})`,
               sponsors: `Patrocinadores (${sponsors.length})`,
               schedule: `Programação (${schedule.length})`,
+              workshops: `Oficinas (${workshops.length})`,
               registrations: 'Gerenciar Inscrições',
               checkin: 'Painel Check-in',
               certificates: 'Certificados',
@@ -972,6 +1091,20 @@ export default function EventDetailPage() {
                       onChange={(e) => setCapacity(Number(e.target.value))}
                       className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors"
                     />
+                  </div>
+
+                  {/* Max Workshops */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Máximo de Oficinas por Participante</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={maxWorkshops}
+                      onChange={(e) => setMaxWorkshops(Number(e.target.value))}
+                      className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors"
+                    />
+                    <p className="text-[11px] text-slate-500">Defina 0 para ilimitado ou se não houver oficinas.</p>
                   </div>
 
                   {/* Start Date */}
@@ -1275,6 +1408,117 @@ export default function EventDetailPage() {
                         <button onClick={() => handleDeleteScheduleItem(item.id)} className="p-2 text-red-405 hover:text-red-300 hover:bg-slate-900 rounded-lg">
                           <Trash2 className="h-4 w-4" />
                         </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: WORKSHOPS */}
+        {activeTab === 'workshops' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-slate-900/10 border border-slate-900/40 p-5 rounded-2xl">
+              <div>
+                <h2 className="text-xl font-extrabold text-white">Gestão de Oficinas (CONLUZ)</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Limite por participante:{' '}
+                  <span className="font-extrabold text-violet-400">
+                    {event?.maxWorkshops === 0 ? 'Sem limite' : `${event?.maxWorkshops} oficina(s)`}
+                  </span>
+                </p>
+              </div>
+              <Button
+                onClick={() => openWorkshopModal()}
+                className="bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center space-x-2 text-xs py-1.5 px-4 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Criar Oficina</span>
+              </Button>
+            </div>
+
+            {workshops.length === 0 ? (
+              <div className="border border-dashed border-slate-850 rounded-2xl flex flex-col items-center justify-center py-16 text-center">
+                <span className="text-slate-500 text-sm">Nenhuma oficina cadastrada neste evento.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {workshops.map((w) => {
+                  const startTimeStr = new Date(w.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                  const endTimeStr = new Date(w.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                  const dateStr = new Date(w.startTime).toLocaleDateString('pt-BR');
+                  const wSpeaker = speakers.find((sp) => sp.id === w.speakerId);
+                  const enrolled = w._count?.enrollments || 0;
+                  const pct = Math.min(100, Math.round((enrolled / w.capacity) * 100));
+
+                  return (
+                    <div key={w.id} className="bg-slate-900/20 border border-slate-900 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-slate-800 transition-colors">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xs font-extrabold text-violet-400 uppercase tracking-widest flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{dateStr} • {startTimeStr} - {endTimeStr}</span>
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            enrolled >= w.capacity ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}>
+                            {enrolled >= w.capacity ? 'Esgotado' : `${w.capacity - enrolled} vagas`}
+                          </span>
+                        </div>
+
+                        <h3 className="font-extrabold text-white text-base leading-tight">{w.title}</h3>
+                        {w.description && <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{w.description}</p>}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-900/55 text-xs text-slate-400">
+                          {w.location && (
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <MapPin className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                              <span className="truncate">{w.location}</span>
+                            </div>
+                          )}
+                          {wSpeaker && (
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Globe className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                              <span className="truncate">Palestrante: {wSpeaker.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress Bar & Actions */}
+                      <div className="space-y-3 pt-2">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-2xs font-bold text-slate-450">
+                            <span>Ocupação das Vagas</span>
+                            <span>{enrolled} / {w.capacity} ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-violet-500'
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end space-x-2 pt-1">
+                          <button
+                            onClick={() => openEnrollmentsModal(w)}
+                            title="Ver Participantes Inscritos"
+                            className="p-2 text-slate-455 hover:text-white hover:bg-slate-900 rounded-lg transition-colors"
+                          >
+                            <Users className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => openWorkshopModal(w)} className="p-2 text-slate-455 hover:text-white hover:bg-slate-900 rounded-lg transition-colors">
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => handleDeleteWorkshop(w.id)} className="p-2 text-red-405 hover:text-red-300 hover:bg-slate-900 rounded-lg transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1799,7 +2043,7 @@ export default function EventDetailPage() {
           <div className="bg-slate-900 border border-slate-850 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
             <h3 className="font-extrabold text-white text-lg">
               {editingId ? 'Editar' : 'Adicionar'}{' '}
-              {modalOpen === 'speaker' ? 'Palestrante' : modalOpen === 'sponsor' ? 'Patrocinador' : 'Atividade'}
+              {modalOpen === 'speaker' ? 'Palestrante' : modalOpen === 'sponsor' ? 'Patrocinador' : modalOpen === 'schedule' ? 'Atividade' : 'Oficina'}
             </h3>
 
             {modalError && <p className="text-xs font-semibold text-red-400 bg-red-950/20 border border-red-900/30 p-2.5 rounded-lg">{modalError}</p>}
@@ -1900,6 +2144,49 @@ export default function EventDetailPage() {
                   </div>
                 </>
               )}
+
+              {/* Workshop Modal Content */}
+              {modalOpen === 'workshop' && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-450 font-bold uppercase">Título da Oficina *</label>
+                    <input type="text" value={workTitle} onChange={(e) => setWorkTitle(e.target.value)} placeholder="Ex: Oficina de Robótica e IOT" className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-450 font-bold uppercase">Descrição</label>
+                    <textarea rows={2} value={workDesc} onChange={(e) => setWorkDesc(e.target.value)} className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-slate-450 font-bold uppercase">Início *</label>
+                      <input type="datetime-local" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-250 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-slate-450 font-bold uppercase">Fim *</label>
+                      <input type="datetime-local" value={workEnd} onChange={(e) => setWorkEnd(e.target.value)} className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-250 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-slate-450 font-bold uppercase">Capacidade *</label>
+                      <input type="number" min={1} value={workCapacity} onChange={(e) => setWorkCapacity(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-slate-450 font-bold uppercase">Local</label>
+                      <input type="text" value={workLocation} onChange={(e) => setWorkLocation(e.target.value)} placeholder="Ex: Sala 103" className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-450 font-bold uppercase">Palestrante Responsável</label>
+                    <select value={workSpeakerId} onChange={(e) => setWorkSpeakerId(e.target.value)} className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none">
+                      <option value="">Nenhum Palestrante</option>
+                      {speakers.map((sp) => (
+                        <option key={sp.id} value={sp.id}>{sp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Modal Actions */}
@@ -1914,7 +2201,9 @@ export default function EventDetailPage() {
                     ? handleSaveSpeaker
                     : modalOpen === 'sponsor'
                     ? handleSaveSponsor
-                    : handleSaveScheduleItem
+                    : modalOpen === 'schedule'
+                    ? handleSaveScheduleItem
+                    : handleSaveWorkshop
                 }
                 className="bg-violet-600 hover:bg-violet-700 text-white font-bold py-1.5 px-5 rounded-lg"
               >
@@ -1924,6 +2213,105 @@ export default function EventDetailPage() {
           </div>
         </div>
       )}
+      {/* --- MODAL: WORKSHOP ENROLLMENTS LIST --- */}
+      {enrollmentsModalOpen && selectedWorkshop && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-850 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative flex flex-col max-h-[85vh]">
+            <button
+              onClick={() => setEnrollmentsModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-455 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <div className="flex-shrink-0 space-y-1">
+              <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-violet-500" />
+                Participantes da Oficina
+              </h3>
+              <p className="text-xs text-violet-400 font-extrabold">
+                {selectedWorkshop.title}
+              </p>
+              <p className="text-[10px] text-slate-500">
+                {new Date(selectedWorkshop.startTime).toLocaleDateString('pt-BR')} • {new Date(selectedWorkshop.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedWorkshop.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+
+            {enrollmentsError && (
+              <div className="p-3 bg-red-955/40 border border-red-900/50 rounded-lg text-xs text-red-400 flex items-center gap-2 flex-shrink-0">
+                <AlertCircle className="h-4 w-4" />
+                <span>{enrollmentsError}</span>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto min-h-0 bg-slate-950/30 border border-slate-850 rounded-xl">
+              {loadingEnrollments ? (
+                <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                  <Loader2 className="h-6 w-6 text-violet-500 animate-spin" />
+                  <span className="text-xs text-slate-450 font-semibold">Carregando inscritos...</span>
+                </div>
+              ) : workshopEnrollments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Users className="h-8 w-8 text-slate-650 mb-2" />
+                  <span className="text-slate-500 text-xs font-semibold">Nenhum participante inscrito nesta oficina ainda.</span>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-850 text-slate-450 uppercase font-bold tracking-widest text-[9px] bg-slate-950/50">
+                      <th className="py-3 px-4">Código / Nome</th>
+                      <th className="py-3 px-4">E-mail / Telefone</th>
+                      <th className="py-3 px-4 text-center">Data Inscrição</th>
+                      <th className="py-3 px-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workshopEnrollments.map((item) => {
+                      const reg = item.registration;
+                      if (!reg) return null;
+                      return (
+                        <tr key={item.id} className="border-b border-slate-850/50 hover:bg-slate-900/10 text-white">
+                          <td className="py-3 px-4">
+                            <div className="font-mono text-violet-400 font-extrabold text-[10px]">{reg.code}</div>
+                            <div className="font-extrabold mt-0.5">{reg.name}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-slate-350">{reg.email}</div>
+                            {reg.phone && <div className="text-slate-500 text-[10px] mt-0.5">{reg.phone}</div>}
+                          </td>
+                          <td className="py-3 px-4 text-center text-slate-450">
+                            {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+                            <div className="text-[9px] mt-0.5">{new Date(item.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={() => handleCancelEnrollment(selectedWorkshop.id, reg.id)}
+                              className="text-red-405 hover:text-red-300 font-extrabold uppercase text-[9px] tracking-wider px-2.5 py-1 bg-red-955/20 hover:bg-red-900/20 border border-red-900/30 rounded transition-all"
+                            >
+                              Remover
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-900 flex-shrink-0">
+              <Button
+                type="button"
+                onClick={() => setEnrollmentsModalOpen(false)}
+                className="bg-slate-800 hover:bg-slate-750 text-white font-bold text-xs py-2 px-5 rounded-lg"
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- MODAL: TRANSFER REGISTRATION --- */}
       {transferModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">

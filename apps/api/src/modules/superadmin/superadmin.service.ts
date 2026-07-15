@@ -1,9 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
+import { EmailStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SuperadminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('email') private readonly emailQueue: Queue,
+  ) {}
 
   async getStats() {
     const [totalTenants, totalUsers, totalEvents, totalRegistrations] = await Promise.all([
@@ -106,4 +112,100 @@ export class SuperadminService {
       data: { isActive: !user.isActive },
     });
   }
+
+  async getEmailLogs(page: number, limit: number, status?: EmailStatus, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { to: { contains: search, mode: 'insensitive' } },
+        { subject: { contains: search, mode: 'insensitive' } },
+        { template: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      this.prisma.emailLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.emailLog.count({ where }),
+    ]);
+
+    return {
+      data: logs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getEmailStats() {
+    const counts = await this.prisma.emailLog.groupBy({
+      by: ['status'],
+      _count: true,
+    });
+
+    const stats = {
+      sent: 0,
+      failed: 0,
+      dead: 0,
+      pendingInQueue: 0,
+    };
+
+    for (const group of counts) {
+      if (group.status === EmailStatus.SENT) stats.sent = group._count;
+      if (group.status === EmailStatus.FAILED) stats.failed = group._count;
+      if (group.status === EmailStatus.DEAD) stats.dead = group._count;
+      if (group.status === EmailStatus.PENDING) stats.pendingInQueue = group._count;
+    }
+
+    return stats;
+  }
+
+  async retryEmail(id: string) {
+    const emailLog = await this.prisma.emailLog.findUnique({
+      where: { id },
+    });
+
+    if (!emailLog) {
+      throw new NotFoundException('Log de e-mail não encontrado.');
+    }
+
+    const updatedLog = await this.prisma.emailLog.update({
+      where: { id },
+      data: {
+        status: EmailStatus.PENDING,
+        attempts: 0,
+        lastError: null,
+      },
+    });
+
+    await this.emailQueue.add(
+      updatedLog.template,
+      { emailLogId: updatedLog.id },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: { count: 100 },
+        removeOnFail: false,
+      },
+    );
+
+    return {
+      message: 'E-mail reenviado com sucesso para a fila.',
+      log: updatedLog,
+    };
+  }
 }
+

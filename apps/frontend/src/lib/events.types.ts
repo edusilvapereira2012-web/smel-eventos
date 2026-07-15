@@ -86,4 +86,31 @@ export interface Event {
   certificateSignerUrl?: string | null;
   certificateBackgroundUrl?: string | null;
   certificateLayoutJson?: any | null;
+  maxWorkshops: number;
+  workshops?: Workshop[];
+}
+
+export interface Workshop {
+  id: string;
+  eventId: string;
+  title: string;
+  description?: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  location?: string | null;
+  speakerId?: string | null;
+  speaker?: EventSpeaker | null;
+  _count?: {
+    enrollments: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkshopEnrollment {
+  id: string;
+  registrationId: string;
+  workshopId: string;
+  createdAt: string;
 }

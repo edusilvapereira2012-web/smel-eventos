@@ -17,7 +17,15 @@ import {
   AlertTriangle,
   Settings,
   RefreshCw,
-  Power
+  Power,
+  Mail,
+  XCircle,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  CheckCircle,
+  Info
 } from 'lucide-react';
 
 interface Stats {
@@ -49,6 +57,26 @@ interface UserItem {
   registrationsCount: number;
 }
 
+interface EmailLog {
+  id: string;
+  to: string;
+  subject: string;
+  template: string;
+  status: 'PENDING' | 'SENT' | 'FAILED' | 'DEAD';
+  attempts: number;
+  lastError: string | null;
+  variables: Record<string, any>;
+  createdAt: string;
+  sentAt: string | null;
+}
+
+interface EmailStats {
+  sent: number;
+  failed: number;
+  dead: number;
+  pendingInQueue: number;
+}
+
 export default function SuperadminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -57,12 +85,23 @@ export default function SuperadminDashboard() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'tenants' | 'users'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'users' | 'emails'>('tenants');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Email state variables
+  const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
+  const [emailPage, setEmailPage] = useState(1);
+  const [emailTotalPages, setEmailTotalPages] = useState(1);
+  const [emailTotalItems, setEmailTotalItems] = useState(0);
+  const [emailStatusFilter, setEmailStatusFilter] = useState('');
+  const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const isSuperadmin = user?.email === 'valterpcjr@gmail.com';
 
@@ -86,17 +125,74 @@ export default function SuperadminDashboard() {
     }
   };
 
+  const fetchEmails = async () => {
+    try {
+      setLoadingData(true);
+      setError(null);
+      const [logsRes, statsRes] = await Promise.all([
+        api.get('/superadmin/email/logs', {
+          params: {
+            page: emailPage,
+            limit: 10,
+            status: emailStatusFilter || undefined,
+            search: debouncedSearch || undefined,
+          }
+        }),
+        api.get<EmailStats>('/superadmin/email/stats')
+      ]);
+      setEmailLogs(logsRes.data.data);
+      setEmailTotalPages(logsRes.data.meta.totalPages);
+      setEmailTotalItems(logsRes.data.meta.total);
+      setEmailStats(statsRes.data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Falha ao carregar logs de e-mail.');
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const retryEmail = async (id: string) => {
+    try {
+      setRetryingId(id);
+      await api.post(`/superadmin/email/retry/${id}`);
+      await fetchEmails();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao reenviar e-mail.');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  // Debounce search term
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/login');
-      } else if (!isSuperadmin) {
-        router.push('/');
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (activeTab === 'emails') {
+        setEmailPage(1);
+      }
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm, activeTab]);
+
+  // Combined fetch trigger
+  useEffect(() => {
+    if (!authLoading && user && isSuperadmin) {
+      if (activeTab === 'emails') {
+        fetchEmails();
       } else {
         fetchData();
       }
     }
-  }, [user, authLoading, isSuperadmin, router]);
+  }, [user, authLoading, isSuperadmin, activeTab, emailPage, emailStatusFilter, debouncedSearch]);
+
+  const handleRefresh = () => {
+    if (activeTab === 'emails') {
+      fetchEmails();
+    } else {
+      fetchData();
+    }
+  };
 
   const toggleTenant = async (id: string) => {
     try {
@@ -105,7 +201,6 @@ export default function SuperadminDashboard() {
       setTenants(prev => 
         prev.map(t => t.id === id ? { ...t, isActive: !t.isActive } : t)
       );
-      // Refresh stats
       const statsRes = await api.get<Stats>('/superadmin/stats');
       setStats(statsRes.data);
     } catch (err: any) {
@@ -126,7 +221,6 @@ export default function SuperadminDashboard() {
       setUsers(prev => 
         prev.map(u => u.id === id ? { ...u, isActive: !u.isActive } : u)
       );
-      // Refresh stats
       const statsRes = await api.get<Stats>('/superadmin/stats');
       setStats(statsRes.data);
     } catch (err: any) {
@@ -186,7 +280,7 @@ export default function SuperadminDashboard() {
         </div>
         <div>
           <Button 
-            onClick={fetchData} 
+            onClick={handleRefresh} 
             variant="outline" 
             size="sm" 
             className="border-slate-800 bg-slate-900/30 text-slate-350 hover:text-white hover:bg-slate-850 flex items-center space-x-2"
@@ -254,9 +348,55 @@ export default function SuperadminDashboard() {
 
         {/* Management Card with Table list */}
         <div className="bg-slate-900/25 border border-slate-900 rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          
+          {/* Email Stats Row (Specific to Email Tab) */}
+          {activeTab === 'emails' && emailStats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-950/40 rounded-xl border border-slate-900/80">
+              <div className="p-3 bg-slate-900/55 rounded-lg border border-slate-900/60 flex items-center space-x-3">
+                <div className="p-2 bg-emerald-950/60 rounded text-emerald-400">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Enviados</span>
+                  <p className="text-lg font-bold mt-0.5 text-emerald-400">{emailStats.sent}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/55 rounded-lg border border-slate-900/60 flex items-center space-x-3">
+                <div className="p-2 bg-blue-950/60 rounded text-blue-400">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Fila (Queue)</span>
+                  <p className="text-lg font-bold mt-0.5 text-blue-400">{emailStats.pendingInQueue}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/55 rounded-lg border border-slate-900/60 flex items-center space-x-3">
+                <div className="p-2 bg-yellow-950/60 rounded text-yellow-400">
+                  <XCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Falhas</span>
+                  <p className="text-lg font-bold mt-0.5 text-yellow-400">{emailStats.failed}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/55 rounded-lg border border-slate-900/60 flex items-center space-x-3">
+                <div className="p-2 bg-red-950/60 rounded text-red-500">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Mortos (DLQ)</span>
+                  <p className="text-lg font-bold mt-0.5 text-red-400">{emailStats.dead}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Tabs */}
-            <div className="flex space-x-1.5 bg-slate-950 p-1.5 rounded-lg border border-slate-900 max-w-xs">
+            <div className="flex space-x-1.5 bg-slate-950 p-1.5 rounded-lg border border-slate-900 w-full lg:max-w-md">
               <button
                 onClick={() => { setActiveTab('tenants'); setSearchTerm(''); }}
                 className={`flex-1 py-1.5 px-4 rounded-md text-xs font-semibold transition-all ${
@@ -277,25 +417,99 @@ export default function SuperadminDashboard() {
               >
                 Usuários
               </button>
+              <button
+                onClick={() => { setActiveTab('emails'); setSearchTerm(''); }}
+                className={`flex-1 py-1.5 px-4 rounded-md text-xs font-semibold transition-all ${
+                  activeTab === 'emails' 
+                    ? 'bg-violet-600 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Logs de E-mail
+              </button>
             </div>
 
-            {/* Search Input */}
-            <div className="relative max-w-sm w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder={activeTab === 'tenants' ? 'Buscar organização...' : 'Buscar usuário...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-slate-950 border border-slate-900 rounded-lg focus:outline-none focus:border-violet-500 text-slate-200 placeholder-slate-500 transition-all"
-              />
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full lg:max-w-xl justify-end">
+              {/* Status Filter for Email tab */}
+              {activeTab === 'emails' && (
+                <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-900 overflow-x-auto whitespace-nowrap scrollbar-none">
+                  <button
+                    onClick={() => { setEmailStatusFilter(''); setEmailPage(1); }}
+                    className={`py-1 px-2.5 rounded-md text-[10px] font-semibold transition-all ${
+                      emailStatusFilter === '' 
+                        ? 'bg-slate-800 text-white shadow-sm' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => { setEmailStatusFilter('SENT'); setEmailPage(1); }}
+                    className={`py-1 px-2.5 rounded-md text-[10px] font-semibold transition-all ${
+                      emailStatusFilter === 'SENT' 
+                        ? 'bg-emerald-950 text-emerald-400 shadow-sm border border-emerald-900/30' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Enviados
+                  </button>
+                  <button
+                    onClick={() => { setEmailStatusFilter('PENDING'); setEmailPage(1); }}
+                    className={`py-1 px-2.5 rounded-md text-[10px] font-semibold transition-all ${
+                      emailStatusFilter === 'PENDING' 
+                        ? 'bg-blue-950 text-blue-400 shadow-sm border border-blue-900/30' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Fila
+                  </button>
+                  <button
+                    onClick={() => { setEmailStatusFilter('FAILED'); setEmailPage(1); }}
+                    className={`py-1 px-2.5 rounded-md text-[10px] font-semibold transition-all ${
+                      emailStatusFilter === 'FAILED' 
+                        ? 'bg-yellow-950 text-yellow-400 shadow-sm border border-yellow-900/30' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Falhas
+                  </button>
+                  <button
+                    onClick={() => { setEmailStatusFilter('DEAD'); setEmailPage(1); }}
+                    className={`py-1 px-2.5 rounded-md text-[10px] font-semibold transition-all ${
+                      emailStatusFilter === 'DEAD' 
+                        ? 'bg-red-950 text-red-400 shadow-sm border border-red-900/30' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Mortos
+                  </button>
+                </div>
+              )}
+
+              {/* Search Input */}
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder={
+                    activeTab === 'tenants' 
+                      ? 'Buscar organização...' 
+                      : activeTab === 'users' 
+                        ? 'Buscar usuário...' 
+                        : 'Buscar por destinatário, assunto...'
+                  }
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 text-sm bg-slate-950 border border-slate-900 rounded-lg focus:outline-none focus:border-violet-500 text-slate-200 placeholder-slate-500 transition-all"
+                />
+              </div>
             </div>
           </div>
 
           {loadingData ? (
             <div className="py-20 flex flex-col items-center justify-center space-y-3">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-violet-500" />
-              <span className="text-xs text-slate-500">Carregando listagens...</span>
+              <span className="text-xs text-slate-500">Carregando dados...</span>
             </div>
           ) : activeTab === 'tenants' ? (
             /* Tenants Table */
@@ -365,7 +579,7 @@ export default function SuperadminDashboard() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : activeTab === 'users' ? (
             /* Users Table */
             <div className="overflow-x-auto border border-slate-900/60 rounded-xl">
               <table className="w-full border-collapse text-left text-sm">
@@ -450,9 +664,238 @@ export default function SuperadminDashboard() {
                 </tbody>
               </table>
             </div>
+          ) : (
+            /* Email Logs Table */
+            <div className="space-y-4">
+              <div className="overflow-x-auto border border-slate-900/60 rounded-xl">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-950/65 border-b border-slate-900 text-slate-400 text-xs font-semibold uppercase">
+                      <th className="px-6 py-4">Destinatário</th>
+                      <th className="px-6 py-4">Assunto</th>
+                      <th className="px-6 py-4">Template</th>
+                      <th className="px-6 py-4 text-center">Status</th>
+                      <th className="px-6 py-4 text-center">Tentativas</th>
+                      <th className="px-6 py-4">Data</th>
+                      <th className="px-6 py-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900">
+                    {emailLogs.length > 0 ? (
+                      emailLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-900/10 transition-colors">
+                          <td className="px-6 py-4.5 font-semibold text-slate-200 select-all">{log.to}</td>
+                          <td className="px-6 py-4.5 text-slate-300 max-w-[200px] truncate" title={log.subject}>{log.subject}</td>
+                          <td className="px-6 py-4.5 text-slate-500 font-mono text-xs">{log.template}</td>
+                          <td className="px-6 py-4.5 text-center">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              log.status === 'SENT' 
+                                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/30' 
+                                : log.status === 'FAILED'
+                                  ? 'bg-yellow-950/60 text-yellow-400 border border-yellow-900/30'
+                                  : log.status === 'DEAD'
+                                    ? 'bg-red-950/60 text-red-400 border border-red-900/30'
+                                    : 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
+                            }`}>
+                              {log.status === 'SENT' 
+                                ? 'Enviado' 
+                                : log.status === 'FAILED' 
+                                  ? 'Falhou' 
+                                  : log.status === 'DEAD' 
+                                    ? 'Morto (DLQ)' 
+                                    : 'Fila (Queue)'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4.5 text-center text-slate-400 font-semibold">{log.attempts}</td>
+                          <td className="px-6 py-4.5 text-slate-500 text-xs">
+                            {new Date(log.createdAt).toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4.5 text-right flex items-center justify-end space-x-2">
+                            <Button
+                              onClick={() => setSelectedLog(log)}
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
+                              title="Visualizar Detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {log.status !== 'SENT' && (
+                              <Button
+                                onClick={() => retryEmail(log.id)}
+                                disabled={retryingId === log.id}
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-lg border border-slate-800 text-violet-400 hover:text-violet-300 hover:bg-violet-950/15"
+                                title="Re-enfileirar E-mail"
+                              >
+                                <RefreshCw className={`h-4 w-4 ${retryingId === log.id ? 'animate-spin' : ''}`} />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-10 text-center text-slate-500 text-xs">
+                          Nenhum log de e-mail encontrado.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination controls for emails */}
+              {emailTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 border-t border-slate-900/60 pt-4">
+                  <span className="text-xs text-slate-500">
+                    Mostrando {(emailPage - 1) * 10 + 1} a {Math.min(emailPage * 10, emailTotalItems)} de {emailTotalItems} e-mails
+                  </span>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => setEmailPage(prev => Math.max(prev - 1, 1))}
+                      disabled={emailPage === 1}
+                      variant="outline"
+                      size="sm"
+                      className="border-slate-800 bg-slate-900/30 text-slate-350 hover:text-white"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-slate-450 self-center px-1">
+                      Página {emailPage} de {emailTotalPages}
+                    </span>
+                    <Button
+                      onClick={() => setEmailPage(prev => Math.min(prev + 1, emailTotalPages))}
+                      disabled={emailPage === emailTotalPages}
+                      variant="outline"
+                      size="sm"
+                      className="border-slate-800 bg-slate-900/30 text-slate-350 hover:text-white"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </section>
+
+      {/* Modal de Detalhes do E-mail */}
+      {selectedLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
+              <div className="flex items-center space-x-2">
+                <Mail className="h-5 w-5 text-violet-400" />
+                <h3 className="font-bold text-slate-200">Detalhes do E-mail</h3>
+              </div>
+              <button 
+                onClick={() => setSelectedLog(null)} 
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            {/* Content */}
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-3 gap-2 text-sm border-b border-slate-800/50 pb-4">
+                <span className="text-slate-400 font-medium">Destinatário:</span>
+                <span className="col-span-2 text-slate-200 font-mono select-all break-all">{selectedLog.to}</span>
+                
+                <span className="text-slate-400 font-medium">Assunto:</span>
+                <span className="col-span-2 text-slate-200 font-semibold">{selectedLog.subject}</span>
+                
+                <span className="text-slate-400 font-medium">Template:</span>
+                <span className="col-span-2 text-slate-350 font-mono text-xs">{selectedLog.template}</span>
+                
+                <span className="text-slate-400 font-medium">Status:</span>
+                <span className="col-span-2">
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedLog.status === 'SENT' 
+                      ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/30' 
+                      : selectedLog.status === 'FAILED'
+                        ? 'bg-yellow-950/60 text-yellow-400 border border-yellow-900/30'
+                        : selectedLog.status === 'DEAD'
+                          ? 'bg-red-950/60 text-red-400 border border-red-900/30'
+                          : 'bg-blue-950/60 text-blue-400 border border-blue-900/30'
+                  }`}>
+                    {selectedLog.status === 'SENT' 
+                      ? 'Enviado' 
+                      : selectedLog.status === 'FAILED' 
+                        ? 'Falhou' 
+                        : selectedLog.status === 'DEAD' 
+                          ? 'Morto (DLQ)' 
+                          : 'Fila (Queue)'}
+                  </span>
+                </span>
+                
+                <span className="text-slate-400 font-medium">Tentativas:</span>
+                <span className="col-span-2 text-slate-200">{selectedLog.attempts}</span>
+
+                <span className="text-slate-400 font-medium">Criado em:</span>
+                <span className="col-span-2 text-slate-350 text-xs">
+                  {new Date(selectedLog.createdAt).toLocaleString('pt-BR')}
+                </span>
+
+                {selectedLog.sentAt && (
+                  <>
+                    <span className="text-slate-400 font-medium">Enviado em:</span>
+                    <span className="col-span-2 text-slate-350 text-xs">
+                      {new Date(selectedLog.sentAt).toLocaleString('pt-BR')}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {selectedLog.lastError && (
+                <div className="space-y-1.5 p-3.5 bg-red-950/20 border border-red-900/40 rounded-xl text-red-300">
+                  <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-red-400">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>Último Erro</span>
+                  </div>
+                  <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-black/35 p-2.5 rounded-lg border border-red-900/20 overflow-x-auto max-h-40">
+                    {selectedLog.lastError}
+                  </pre>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block">Variáveis do Template (JSON)</span>
+                <pre className="text-xs font-mono bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto max-h-60">
+                  {JSON.stringify(selectedLog.variables, null, 2)}
+                </pre>
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/20 flex justify-end space-x-3">
+              <Button 
+                onClick={() => setSelectedLog(null)} 
+                variant="outline" 
+                className="border-slate-800 bg-slate-900/30 text-slate-300 hover:text-white"
+              >
+                Fechar
+              </Button>
+              {selectedLog.status !== 'SENT' && (
+                <Button
+                  onClick={() => {
+                    retryEmail(selectedLog.id);
+                    setSelectedLog(null);
+                  }}
+                  disabled={retryingId === selectedLog.id}
+                  className="bg-violet-600 hover:bg-violet-500 text-white flex items-center space-x-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${retryingId === selectedLog.id ? 'animate-spin' : ''}`} />
+                  <span>Reenviar Agora</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+

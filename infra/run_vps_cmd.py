@@ -2,7 +2,7 @@ import pexpect
 import sys
 
 def run_vps_cmd(cmd):
-    child = pexpect.spawn(f'ssh -t administrator@190.2.72.72 "{cmd}"', encoding='utf-8')
+    child = pexpect.spawn('ssh', ['-t', 'administrator@190.2.72.72', cmd], encoding='utf-8')
     child.logfile = sys.stdout
     
     prompts = [

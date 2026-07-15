@@ -96,10 +96,17 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Resiliência e Retry**: Atraso de reenvio exponencial (`backoff: exponential, 5s`) limitado a 3 tentativas.
 * **Dead Letter Queue (DLQ)**: Jobs falhos persistentes são marcados como `DEAD` no banco para acompanhamento em painel dedicado no frontend.
 * **Logs e Auditoria**: Cada envio cria um registro na tabela `EmailLog`.
+* **Configuração de SMTP em Produção**: O sistema utiliza autenticação SMTP via porta `587` (TLS) com o e-mail institucional `eventos@educacao.luziania.go.gov.br`. Para contornar bloqueios de comunicação de rede na mesma sub-rede da VPS e do servidor de correio (isolamento de layer 2 do provedor), foi estabelecida uma rota persistente via gateway no Netplan (`/etc/netplan/99-custom-routes.yaml`), garantindo a entrega direta.
 
 ### 3.8. Dashboards e WebSocket (Leva 09)
 * **Cache de Métricas**: Indicadores de visão geral do inquilino cacheados no Redis com TTL de 5 minutos.
 * **Feeds em Tempo Real**: Websocket (`Socket.io`) estruturado por namespaces por Tenant (`/tenant-{tenantId}`) que envia transmissões imediatas de novos check-ins e alterações de inscrições para atualização dinâmica dos painéis sem refresh.
+
+### 3.9. Gestão de Oficinas e Palestrantes (Leva 12)
+* **Modelagem de Dados**: Entidades relacionais `Workshop` (capacidade, horários de início e término, local, limite de vagas e palestrantes associados) e `WorkshopEnrollment` (vínculo de inscrições).
+* **Concorrência e Vagas (Pessimistic Locking)**: Uso de travas pessimistas (`FOR UPDATE` na tabela `Workshop` durante a transação) para evitar condições de corrida (race conditions) e *overbooking* de vagas em inscrições simultâneas.
+* **Detecção de Conflitos de Horário**: Validação automática e em tempo real que impede que um mesmo participante se inscreva em oficinas cujos horários se sobreponham (mesmo dia e horário de realização).
+* **Ativação Dinâmica**: Arquitetura desacoplada e agnóstica; a funcionalidade de oficinas e palestrantes é ativada de forma transparente para qualquer evento cujo limite máximo de oficinas por participante (`maxWorkshops`) seja configurado com valor maior que zero.
 
 ---
 

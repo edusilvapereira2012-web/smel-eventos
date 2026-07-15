@@ -93,6 +93,8 @@ model Event {
   sponsors      EventSponsor[]
   schedule      ScheduleItem[]
   registrations Registration[]
+  maxWorkshops             Int            @default(0)
+  workshops                Workshop[]
   certificateTitle         String?
   certificateBody          String?
   certificateHours         Int?
@@ -118,13 +120,14 @@ model EventCategory {
 }
 
 model EventSpeaker {
-  id       String  @id @default(uuid())
-  eventId  String
-  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  name     String
-  bio      String?
-  photoUrl String?
-  role     String?
+  id        String     @id @default(uuid())
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  bio       String?
+  photoUrl  String?
+  role      String?
+  workshops Workshop[]
 }
 
 model EventSponsor {
@@ -173,12 +176,13 @@ model Registration {
   cancelledAt      DateTime?
   cancelReason     String?
   transferredTo    String?
-  transferredFrom  String?
-  metadata         Json?
-  checkIn          CheckIn?
-  certificate      Certificate?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  transferredFrom     String?
+  metadata            Json?
+  checkIn             CheckIn?
+  certificate         Certificate?
+  workshopEnrollments WorkshopEnrollment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([eventId, status])
   @@index([email, eventId])
@@ -245,6 +249,36 @@ enum EmailStatus {
   SENT
   FAILED
   DEAD
+}
+
+model Workshop {
+  id          String               @id @default(uuid())
+  eventId     String
+  event       Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  location    String?
+  speakerId   String?
+  speaker     EventSpeaker?        @relation(fields: [speakerId], references: [id], onDelete: SetNull)
+  enrollments WorkshopEnrollment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model WorkshopEnrollment {
+  id             String       @id @default(uuid())
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  workshopId     String
+  workshop       Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([registrationId, workshopId])
+  @@index([registrationId])
+  @@index([workshopId])
 }
 
 

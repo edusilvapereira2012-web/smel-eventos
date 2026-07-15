@@ -31,6 +31,11 @@ export default function EventPublicLandingPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{ status: string; code?: string; waitlistPosition?: number } | null>(null);
 
+  // Workshops list
+  const [workshops, setWorkshops] = useState<any[]>([]);
+  const [maxWorkshops, setMaxWorkshops] = useState<number>(0);
+  const [selectedWorkshopIds, setSelectedWorkshopIds] = useState<string[]>([]);
+
   // Cancellation modal states
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelData, setCancelData] = useState({ code: '', email: '' });
@@ -45,6 +50,15 @@ export default function EventPublicLandingPage() {
         setError(null);
         const response = await api.get(`/events/slug/${slug}`);
         setEvent(response.data);
+
+        // Fetch workshops as well
+        try {
+          const wsResponse = await api.get(`/public/events/slug/${slug}/workshops`);
+          setWorkshops(wsResponse.data.workshops || []);
+          setMaxWorkshops(wsResponse.data.maxWorkshops || 0);
+        } catch (wsErr) {
+          console.error('Erro ao carregar oficinas do evento:', wsErr);
+        }
       } catch (err: any) {
         setError(
           err.response?.status === 404
@@ -94,6 +108,45 @@ export default function EventPublicLandingPage() {
     setFormData((prev) => ({ ...prev, phone: value }));
   };
 
+  const checkConflict = (workshop: any, selectedIds: string[]) => {
+    const wStart = new Date(workshop.startTime).getTime();
+    const wEnd = new Date(workshop.endTime).getTime();
+
+    for (const id of selectedIds) {
+      const selected = workshops.find((w) => w.id === id);
+      if (!selected || selected.id === workshop.id) continue;
+
+      const sStart = new Date(selected.startTime).getTime();
+      const sEnd = new Date(selected.endTime).getTime();
+
+      if (sStart < wEnd && wStart < sEnd) {
+        return selected.title;
+      }
+    }
+    return null;
+  };
+
+  const handleToggleWorkshop = (id: string) => {
+    setSelectedWorkshopIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      
+      const workshop = workshops.find((w) => w.id === id);
+      if (!workshop) return prev;
+
+      if (maxWorkshops > 0 && prev.length >= maxWorkshops) {
+        return prev;
+      }
+
+      if (checkConflict(workshop, prev)) {
+        return prev;
+      }
+
+      return [...prev, id];
+    });
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.cpf.replace(/\D/g, '').length !== 11) {
@@ -109,9 +162,11 @@ export default function EventPublicLandingPage() {
         email: formData.email,
         cpf: formData.cpf.replace(/\D/g, ''),
         phone: formData.phone ? formData.phone.replace(/\D/g, '') : undefined,
+        workshopIds: selectedWorkshopIds,
       });
       setSuccessData(response.data);
       setFormData({ name: '', email: '', cpf: '', phone: '' });
+      setSelectedWorkshopIds([]);
     } catch (err: any) {
       setSubmitError(err.response?.data?.message || 'Ocorreu um erro ao realizar a inscrição.');
     } finally {
@@ -465,8 +520,8 @@ export default function EventPublicLandingPage() {
       {/* Registration Modal Overlay */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
               <div>
                 <h3 className="text-lg font-extrabold text-white">Ficha de Inscrição</h3>
                 <p className="text-2xs text-slate-500 mt-0.5">Preencha seus dados para obter sua credencial</p>
@@ -479,7 +534,7 @@ export default function EventPublicLandingPage() {
               </button>
             </div>
 
-            <form onSubmit={handleRegister} className="p-6 space-y-4">
+            <form onSubmit={handleRegister} className="p-6 space-y-4 overflow-y-auto flex-1">
               {submitError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-2 text-red-400 text-xs">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -535,6 +590,89 @@ export default function EventPublicLandingPage() {
                   />
                 </div>
               </div>
+
+              {workshops.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-slate-800/80">
+                  <div>
+                    <label className="text-2xs font-extrabold text-slate-400 uppercase tracking-wider block">Escolha suas Oficinas</label>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Você pode selecionar até{' '}
+                      <span className="font-bold text-violet-400">
+                        {maxWorkshops === 0 ? 'quantas oficinas desejar' : `${maxWorkshops} oficina(s)`}
+                      </span>
+                      .
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {workshops.map((w) => {
+                      const isSelected = selectedWorkshopIds.includes(w.id);
+                      const startTimeStr = new Date(w.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                      const endTimeStr = new Date(w.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                      const dateStr = new Date(w.startTime).toLocaleDateString('pt-BR');
+                      const conflictWith = checkConflict(w, selectedWorkshopIds);
+                      const isLimitReached = maxWorkshops > 0 && selectedWorkshopIds.length >= maxWorkshops && !isSelected;
+                      const hasVacancies = w.vacancies > 0;
+                      
+                      const isDisabled = !hasVacancies || isLimitReached || !!conflictWith;
+
+                      return (
+                        <div
+                          key={w.id}
+                          onClick={() => {
+                            if (!isDisabled || isSelected) {
+                              handleToggleWorkshop(w.id);
+                            }
+                          }}
+                          className={`p-3 border rounded-xl flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-violet-950/20 border-violet-500/70'
+                              : isDisabled
+                              ? 'bg-slate-900/10 border-slate-900/40 opacity-50 cursor-not-allowed'
+                              : 'bg-slate-950/40 border-slate-850 hover:border-slate-800'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-violet-400 font-bold">
+                                {dateStr} • {startTimeStr} - {endTimeStr}
+                              </span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                                hasVacancies ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                              }`}>
+                                {hasVacancies ? `${w.vacancies} vagas` : 'Esgotado'}
+                              </span>
+                            </div>
+                            <h4 className="text-xs font-bold text-white truncate">{w.title}</h4>
+                            {w.speaker && (
+                              <p className="text-[10px] text-slate-500 truncate">Palestrante: {w.speaker.name}</p>
+                            )}
+                            
+                            {/* Warnings/Status */}
+                            {conflictWith && (
+                              <p className="text-[9px] font-bold text-amber-500 flex items-center gap-1 mt-0.5">
+                                Conflita com: {conflictWith}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex-shrink-0">
+                            <div className={`h-4.5 w-4.5 rounded border flex items-center justify-center transition-colors ${
+                              isSelected ? 'bg-violet-600 border-violet-500' : 'border-slate-700 bg-slate-950'
+                            }`}>
+                              {isSelected && (
+                                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2">
                 <button

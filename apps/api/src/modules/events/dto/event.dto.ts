@@ -48,6 +48,11 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   categoryId?: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  maxWorkshops?: number;
 }
 
 export class UpdateEventDto {
@@ -123,6 +128,11 @@ export class UpdateEventDto {
 
   @IsOptional()
   certificateLayoutJson?: any;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  maxWorkshops?: number;
 }
 
 export class ListEventsQueryDto {

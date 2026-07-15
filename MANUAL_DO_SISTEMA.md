@@ -71,3 +71,46 @@ A plataforma **não possui uma área restrita (com login/senha)** voltada para o
 *   **Alternativas Futuras de Melhoria:**
     1.  **Autocompletar Local (LocalStorage):** Salvar os dados do último formulário preenchido localmente no navegador do participante. Assim, quando ele abrir outro formulário de evento no mesmo dispositivo, os dados serão preenchidos automaticamente.
     2.  **Cadastro do Participante (Portal do Participante):** Criar um fluxo de login simplificado (ou login único/social) para os participantes gerenciarem suas inscrições.
+
+---
+
+## 5. Gestão de Oficinas (CONLUZ e Outros Eventos)
+
+A plataforma conta com um sistema flexível e dinâmico para gerenciar eventos que possuem oficinas integradas (como o CONLUZ).
+
+### 5.1. Como Ativar o Recurso de Oficinas
+Para que um evento exiba o fluxo de oficinas e palestrantes, faça o seguinte no Painel Administrativo:
+1. Acesse a edição do evento ou crie um novo evento.
+2. Defina o campo **"Limite de Oficinas por Participante"** (`maxWorkshops`) com um número maior que zero (ex: `2`).
+3. Salve o evento. O sistema ativará automaticamente as abas de gerenciamento de oficinas e palestrantes na administração do evento e no formulário público.
+
+### 5.2. Como Cadastrar Oficinas e Palestrantes
+No menu do evento correspondente:
+1. **Palestrantes**: Cadastre os palestrantes que conduzirão as oficinas (Nome, Foto, Biografia/Cargo).
+2. **Oficinas**: Cadastre cada oficina preenchendo:
+   * **Título** e **Descrição** da oficina.
+   * **Capacidade de Vagas** (o limite rígido do espaço físico/virtual).
+   * **Data e Horário (Início e Fim)**: O período exato de realização.
+   * **Palestrantes**: Associe os palestrantes cadastrados anteriormente.
+
+### 5.3. Validações e Prevenção de Conflitos (Público)
+No momento em que o participante preenche a inscrição do evento:
+* **Limite Máximo**: O participante só pode marcar até o número de oficinas definido em `maxWorkshops`.
+* **Conflito de Horário**: O formulário impede a seleção de oficinas que aconteçam simultaneamente (sobreposição de horário no mesmo dia).
+* **Bloqueio de Overbooking**: O sistema realiza transações com travas pessimistas (*Pessimistic Locking*). Se duas pessoas tentarem se inscrever na última vaga da mesma oficina ao mesmo tempo, apenas a primeira a concluir terá a vaga confirmada; a segunda receberá um aviso amigável de "Vagas Esgotadas".
+
+### 5.4. Gestão Administrativa de Inscritos
+Na área de administração do evento, em **Oficinas**:
+* É possível listar todos os participantes inscritos em cada oficina específica.
+* O organizador pode remover/cancelar administrativamente a inscrição de um participante em uma oficina individual, liberando a vaga instantaneamente para novos cadastros.
+
+---
+
+## 6. Comunicação e E-mails (Configuração do SMTP)
+
+Para que a plataforma realize o envio automático de confirmações de inscrição, QR Codes e lembretes pré-evento:
+
+1. **E-mail Oficial**: O sistema utiliza o e-mail institucional **`eventos@educacao.luziania.go.gov.br`** integrado via SMTP seguro (porta `587` TLS).
+2. **Resiliência da Fila**: Os envios são orquestrados por uma fila assíncrona (BullMQ). Se houver instabilidade no servidor de correio da Prefeitura, o sistema tenta reenviar o e-mail de forma inteligente 3 vezes com atraso progressivo. Se falhar em todas, o e-mail vai para a fila de mortos (DLQ) para conferência no painel administrativo de e-mails.
+3. **Roteamento Interno na VPS**: Devido ao fato da VPS e do servidor de e-mail estarem no mesmo range de sub-rede interna da Prefeitura (com isolamento de rede local ativo), a VPS foi configurada para rotear o tráfego de e-mail explicitamente através do gateway público (`190.2.72.65`) de forma persistente.
+

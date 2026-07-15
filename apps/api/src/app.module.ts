@@ -29,6 +29,7 @@ import { SuperadminModule } from './modules/superadmin/superadmin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { WorkshopsModule } from './modules/workshops/workshops.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     UploadModule,
     EventsModule,
     RegistrationsModule,
+    WorkshopsModule,
     QrcodeModule,
     CheckInModule,
     GatewayModule,

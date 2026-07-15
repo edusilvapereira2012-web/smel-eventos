@@ -56,7 +56,14 @@ export class EmailProcessor implements OnModuleInit {
     }
   }
 
-  @Process('send-event-reminders')
+  @Process()
+  async handleJob(job: Job) {
+    if (job.name === 'send-event-reminders') {
+      return this.handleSendEventReminders(job);
+    }
+    return this.handleEmailJob(job as Job<{ emailLogId: string }>);
+  }
+
   async handleSendEventReminders(job: Job) {
     this.logger.log(`[Job ${job.id}] Iniciando processamento de lembretes de eventos...`, 'EmailProcessor');
     
@@ -130,7 +137,6 @@ export class EmailProcessor implements OnModuleInit {
     this.logger.log(`[Job ${job.id}] Finalizado envio de lembretes de eventos.`, 'EmailProcessor');
   }
 
-  @Process()
   async handleEmailJob(job: Job<{ emailLogId: string }>) {
     const { emailLogId } = job.data;
     if (!emailLogId) {
