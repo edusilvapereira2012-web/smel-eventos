@@ -117,3 +117,16 @@ Para que a plataforma realize o envio automático de confirmações de inscriç�
 2. **Resiliência da Fila**: Os envios são orquestrados por uma fila assíncrona (BullMQ). Se houver instabilidade no servidor de correio da Prefeitura, o sistema tenta reenviar o e-mail de forma inteligente 3 vezes com atraso progressivo. Se falhar em todas, o e-mail vai para a fila de mortos (DLQ) para conferência no painel administrativo de e-mails.
 3. **Roteamento Interno na VPS**: Devido ao fato da VPS e do servidor de e-mail estarem no mesmo range de sub-rede interna da Prefeitura (com isolamento de rede local ativo), a VPS foi configurada para rotear o tráfego de e-mail explicitamente através do gateway público (`190.2.72.65`) de forma persistente.
 
+---
+
+## 7. Manual do Sistema Interativo (/manual)
+
+O sistema conta com um **Manual Interativo** integrado diretamente na interface administrativa. A visibilidade das abas e orientações é filtrada dinamicamente de acordo com o nível de acesso do usuário logado:
+
+* **Membro**: Visualiza instruções sobre inscrições em eventos, fila de espera automática, uso de ingresso digital e download de certificados.
+* **Checker**: Acesso às orientações para operação do scanner de QR Codes na portaria, buscas manuais de inscritos por CPF/Nome, download offline de dados e sincronização pós-evento.
+* **Organizador**: Acesso aos guias para edição operacional de eventos exigindo justificativa obrigatória registrada na auditoria, além de suas restrições (ex: impossibilidade de criar ou deletar eventos/categorias).
+* **Administrador**: Manual completo de controle do inquilino (gestão de membros, exclusão de eventos/categorias, LGPD e monitor de e-mails).
+* **Superadmin**: Acesso irrestrito a todas as abas, somando-se as instruções de ativação/desativação de organizações, envio de convites e exclusão definitiva de usuários com deleção em cascata no banco.
+
+
