@@ -59,8 +59,8 @@ Todo o ecossistema da aplicação roda de forma isolada e portável dentro de co
 *   **Frontend (Next.js)**: Container `eventos-frontend-prod` exibindo a interface otimizada de produção.
 *   **Nginx**: Container `eventos-nginx-prod` servindo como proxy reverso local.
 
-### Escalabilidade e Alta Concorrência
-O sistema está dimensionado e preparado para suportar **milhares de acessos simultâneos** através das seguintes estratégias técnicas:
+### Suporte a Centenas e Milhares de Acessos Simultâneos
+O sistema foi projetado e está tecnicamente preparado para suportar de **centenas a milhares de acessos simultâneos** com alta estabilidade através das seguintes estratégias técnicas:
 1.  **Processamento Assíncrono de Carga**: Tarefas de alta latência (geração de QR Codes, PDFs de ingressos/certificados e envio de e-mails transacionais) são offloadadas para a fila do Valkey/Redis. A API entrega a resposta HTTP ao usuário final em milissegundos e deixa as tarefas pesadas a cargo do container `worker`.
 2.  **Prevenção de Overbooking (Pessimistic Locking)**: O banco de dados PostgreSQL bloqueia registros de vagas durante transações de inscrição concorrentes (`SELECT FOR UPDATE`), impedindo que duas inscrições na mesma vaga no mesmo milissegundo resultem em excesso de lotação.
 3.  **Logger Não-Bloqueante (Pino)**: O console e logs utilizam buffering assíncrono para evitar que a gravação em disco trave o Event Loop do Node.js.

@@ -278,10 +278,10 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-violet-400" />
-                    6. Resiliência e Alta Concorrência
+                    6. Centenas e Milhares de Acessos Simultâneos
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Preparado para milhares de acessos simultâneos por meio de:
+                    O sistema foi projetado e está preparado para suportar de centenas a milhares de acessos simultâneos com estabilidade por meio de:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li><strong>Processamento Assíncrono (BullMQ)</strong>: Envio de e-mails e geração de PDFs são processados em background, mantendo a API leve.</li>
