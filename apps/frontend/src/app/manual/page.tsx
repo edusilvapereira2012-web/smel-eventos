@@ -258,6 +258,38 @@ export default function ManualPage() {
                     <li>Sempre limpe a pasta <code>apps/frontend/.next</code> após compilações se houver erros de compilação ou de carregamento de páginas.</li>
                   </ol>
                 </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Database className="h-4.5 w-4.5 text-violet-400" />
+                    5. Arquitetura em Containers (Docker)
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    O ecossistema inteiro roda isolado sob Docker (<code>docker-compose.prod.yml</code>):
+                  </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li><strong>Postgres</strong> (Banco Relacional) e <strong>Valkey/Redis</strong> (Filas e Cache).</li>
+                    <li><strong>MinIO</strong> (Armazenamento de Arquivos/Certificados padrão S3).</li>
+                    <li><strong>API</strong> (NestJS), <strong>Worker</strong> (Background Jobs) e <strong>Frontend</strong> (Next.js).</li>
+                    <li><strong>Nginx</strong> (Proxy Reverso) gerenciando as portas de entrada e rotas.</li>
+                  </ul>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-violet-400" />
+                    6. Resiliência e Alta Concorrência
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Preparado para milhares de acessos simultâneos por meio de:
+                  </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li><strong>Processamento Assíncrono (BullMQ)</strong>: Envio de e-mails e geração de PDFs são processados em background, mantendo a API leve.</li>
+                    <li><strong>Pessimistic Locking</strong>: Previne overbooking em eventos de alta concorrência por meio de travas no nível do banco.</li>
+                    <li><strong>Logger Assíncrono (Pino)</strong>: Escrita rápida de logs sem bloquear o Event Loop do Node.js.</li>
+                    <li><strong>PWA + Dexie.js</strong>: Check-in offline que reduz requisições redundantes na API.</li>
+                  </ul>
+                </div>
               </div>
             </div>
           )}

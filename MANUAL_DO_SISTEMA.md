@@ -49,6 +49,24 @@ Ao acessar a rota `/superadmin` (ou clicar em **Painel Superadmin** na página i
 *   **O que acontece quando é Desativada?** O middleware de validação (`TenantInterceptor`) bloqueia imediatamente qualquer operação ou rota associada a esta organização, retornando um erro `403 Forbidden` aos usuários.
 *   **Como reativar?** Se o Superadmin clicar em **Ativar** novamente no painel, o acesso é restabelecido na mesma hora e todos os dados voltam a ser exibidos perfeitamente.
 
+### Arquitetura de Containers (Docker)
+Todo o ecossistema da aplicação roda de forma isolada e portável dentro de containers Docker, conforme definido no arquivo `docker-compose.prod.yml`:
+*   **Banco de Dados**: Container `eventos-postgres-prod` rodando PostgreSQL 16.
+*   **Fila e Cache**: Container `eventos-redis-prod` rodando Valkey (Redis) para controle de filas assíncronas do BullMQ.
+*   **Armazenamento de Mídia**: Container `eventos-minio-prod` rodando MinIO (compatível com S3) para guardar PDFs de ingressos, logos e certificados.
+*   **API (NestJS)**: Container `eventos-api-prod` processando requisições REST de forma ultra-rápida.
+*   **Worker (BullMQ)**: Container `eventos-worker-prod` consumindo tarefas pesadas em background.
+*   **Frontend (Next.js)**: Container `eventos-frontend-prod` exibindo a interface otimizada de produção.
+*   **Nginx**: Container `eventos-nginx-prod` servindo como proxy reverso local.
+
+### Escalabilidade e Alta Concorrência
+O sistema está dimensionado e preparado para suportar **milhares de acessos simultâneos** através das seguintes estratégias técnicas:
+1.  **Processamento Assíncrono de Carga**: Tarefas de alta latência (geração de QR Codes, PDFs de ingressos/certificados e envio de e-mails transacionais) são offloadadas para a fila do Valkey/Redis. A API entrega a resposta HTTP ao usuário final em milissegundos e deixa as tarefas pesadas a cargo do container `worker`.
+2.  **Prevenção de Overbooking (Pessimistic Locking)**: O banco de dados PostgreSQL bloqueia registros de vagas durante transações de inscrição concorrentes (`SELECT FOR UPDATE`), impedindo que duas inscrições na mesma vaga no mesmo milissegundo resultem em excesso de lotação.
+3.  **Logger Não-Bloqueante (Pino)**: O console e logs utilizam buffering assíncrono para evitar que a gravação em disco trave o Event Loop do Node.js.
+4.  **Compressão de Dados**: Middleware de Gzip ativo para compactar pacotes HTTP reduzindo consumo de banda na VPS.
+5.  **Offline-First no Credenciamento (PWA + Dexie.js)**: Operadores de portaria realizam check-ins locais que são sincronizados em lotes subsequentes, reduzindo gargalos de rede em conexões simultâneas de celulares na portaria.
+
 ---
 
 ## 3. Acesso e Fluxo do Participante
