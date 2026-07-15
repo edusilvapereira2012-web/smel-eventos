@@ -56,12 +56,69 @@ export class EmailProcessor implements OnModuleInit {
     }
   }
 
+  @Process('send-event-reminders')
+  async handleSendEventRemindersJob(job: Job) {
+    return this.handleSendEventReminders(job);
+  }
+
+  @Process('verify-email')
+  async handleVerifyEmail(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('reset-password')
+  async handleResetPassword(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('welcome')
+  async handleWelcome(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('invite-member')
+  async handleInviteMember(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('registration-confirmed')
+  async handleRegistrationConfirmed(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('registration-waitlist')
+  async handleRegistrationWaitlist(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('registration-cancelled')
+  async handleRegistrationCancelled(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('waitlist-promoted')
+  async handleWaitlistPromoted(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('event-cancelled')
+  async handleEventCancelled(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('certificate-issued')
+  async handleCertificateIssued(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
+  @Process('event-reminder')
+  async handleEventReminder(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
+  }
+
   @Process()
-  async handleJob(job: Job) {
-    if (job.name === 'send-event-reminders') {
-      return this.handleSendEventReminders(job);
-    }
-    return this.handleEmailJob(job as Job<{ emailLogId: string }>);
+  async handleDefaultJob(job: Job<{ emailLogId: string }>) {
+    return this.handleEmailJob(job);
   }
 
   async handleSendEventReminders(job: Job) {
