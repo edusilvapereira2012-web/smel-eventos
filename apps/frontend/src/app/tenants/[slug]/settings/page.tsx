@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useTenant } from '@/components/tenant-provider';
+import { useAuth } from '@/components/auth-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, UserPlus, ShieldAlert, Trash2, CheckCircle2 } from 'lucide-react';
@@ -11,6 +12,7 @@ import Link from 'next/link';
 
 export default function TenantSettings() {
   const { activeTenant, refetchTenants } = useTenant();
+  const { user } = useAuth();
   const { hasPermission, role: userRole, loading: loadingPerms } = usePermissions();
   const router = useRouter();
 
@@ -211,7 +213,7 @@ export default function TenantSettings() {
             </div>
 
             {/* Invite Form */}
-            {hasPermission('members.create') && (
+            {hasPermission('members.create') && user?.email === 'valterpcjr@gmail.com' && (
               <div className="p-6 bg-slate-900/40 rounded-xl border border-slate-800/80 backdrop-blur-xl space-y-4">
                 <h3 className="text-lg font-bold text-slate-250 flex items-center space-x-2">
                   <UserPlus className="h-5 w-5 text-violet-400" />

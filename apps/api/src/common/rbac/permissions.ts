@@ -49,9 +49,7 @@ export const ROLE_PERMISSIONS: Record<TenantRole, Permission[]> = {
     'dashboard.view',
   ],
   [TenantRole.ORGANIZER]: [
-    'events.create',
     'events.update',
-    'events.delete',
     'events.view',
     'checkin.execute',
     'checkin.perform',

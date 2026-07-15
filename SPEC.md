@@ -63,6 +63,10 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
   * Repositórios de banco herdam `TenantBaseRepository` que automaticamente concatena a cláusula `WHERE tenantId = :tenantId` nas queries, impedindo vazamento de dados.
 * **Guarda de Permissões (RBAC)**:
   * Papéis atribuídos por organização. O decorador `@RequirePermission(...)` valida se o membro possui os privilégios mínimos de ação no inquilino correspondente antes de liberar o acesso à rota.
+  * Restrições e privilégios específicos:
+    * **Criação e Deleção**: Apenas `ADMIN`/`OWNER` (e o Superadmin) têm as permissões `events.create` e `events.delete` para criar e deletar eventos, bem como criar/editar categorias de eventos. O papel `ORGANIZER` não possui esses privilégios.
+    * **Justificativa de Edição**: Embora o papel `ORGANIZER` possa editar detalhes operacionais do evento (como horários e vagas), toda atualização de evento exige obrigatoriamente o envio de uma justificativa textual detalhada, a qual é registrada no `AuditLog`.
+    * **Isolamento de Convites e Organizações**: A criação de novas organizações (`Tenant`) e o envio de novos convites de participação no sistema são restritos unicamente à função global de **Superadmin**, não sendo permitidos aos administradores comuns (`ADMIN`/`OWNER`).
 
 ### 3.3. Ciclo de Vida do Evento e Upload (Leva 04)
 * **Status**: Transição de estados controlada (`DRAFT` ➔ `PUBLISHED` ➔ `FINISHED`/`CANCELLED`).
@@ -152,7 +156,9 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Autenticação Restrita**: Rota do painel de administração global (`/superadmin`) e seus endpoints backend correspondentes protegidos por `SuperadminGuard`.
 * **Identidade Única**: O e-mail `valterpcjr@gmail.com` é configurado como o único Superadmin do ecossistema. Qualquer requisição de outros usuários a endpoints sob o escopo do guard é rejeitada com `403 Forbidden`.
 * **Segurança de Escopo (`@SkipTenant`)**: Os endpoints do Superadmin usam a anotação `@SkipTenant()` para ignorar o requisito padrão de cabeçalho `X-Tenant-ID`, permitindo consultas globais de estatísticas, tenants e usuários.
+* **Criação de Organizações e Convites**: A criação de novas organizações (`Tenant`) e o envio de novos convites de participação no sistema são restritos unicamente ao Superadmin. Administradores comuns de inquilinos (`ADMIN`/`OWNER`) não têm permissão para criar organizações ou enviar novos convites globais.
 * **Remoção do Auto-Cadastro (Hardening)**: O link público de auto-cadastro ("Cadastre-se grátis") na tela de login foi completamente removido. O registro de novos usuários organizadores é restrito, exigindo criação administrativa para impedir logins avulsos sem convite.
+* **Exclusão Definitiva de Usuários**: Implementado endpoint seguro de exclusão física `DELETE /superadmin/users/:id` com dupla confirmação no painel frontend. A deleção limpa as tabelas associativas (`TenantMembership` e `Registration`) em cascata, mantendo a integridade histórica de `AuditLog` ao setar referências de usuário deletado como nulas, impedindo a auto-exclusão do administrador operando e do Superadmin principal.
 
 ### 5.2. Bloqueio Seguro e Conservação de Histórico (Auditoria)
 * **Ativação/Desativação de Organizações**: A desativação de organizações altera o campo `isActive` para `false` no modelo `Tenant`.

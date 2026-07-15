@@ -2,11 +2,13 @@
 
 import React from 'react';
 import { useTenant } from './tenant-provider';
+import { useAuth } from './auth-provider';
 import { useRouter } from 'next/navigation';
 import { Settings, Plus } from 'lucide-react';
 
 export function TenantSelector() {
   const { tenants, activeTenant, selectTenant, loading } = useTenant();
+  const { user } = useAuth();
   const router = useRouter();
 
   if (loading) {
@@ -39,7 +41,9 @@ export function TenantSelector() {
               </option>
             ))
           )}
-          <option value="new" className="text-violet-400 font-semibold">+ Criar Organização</option>
+          {user?.email === 'valterpcjr@gmail.com' && (
+            <option value="new" className="text-violet-400 font-semibold">+ Criar Organização</option>
+          )}
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
           <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">

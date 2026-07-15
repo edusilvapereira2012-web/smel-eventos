@@ -128,14 +128,18 @@ export default function Home() {
               <div className="p-6 bg-slate-900/60 rounded-xl border border-slate-800/60 text-center space-y-3">
                 <p className="text-sm text-slate-400">Você ainda não faz parte de nenhuma organização.</p>
                 <div className="flex justify-center space-x-3">
-                  {user.email === 'valterpcjr@gmail.com' && (
-                    <Button onClick={() => router.push('/superadmin')} className="bg-violet-800 hover:bg-violet-700 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
-                      Painel Superadmin
-                    </Button>
+                  {user.email === 'valterpcjr@gmail.com' ? (
+                    <>
+                      <Button onClick={() => router.push('/superadmin')} className="bg-violet-800 hover:bg-violet-700 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
+                        Painel Superadmin
+                      </Button>
+                      <Button onClick={() => router.push('/tenants/new')} className="bg-slate-700 hover:bg-slate-650 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
+                        Criar Primeira Organização
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-500">Por favor, entre em contato com o administrador para ser convidado a uma organização.</span>
                   )}
-                  <Button onClick={() => router.push('/tenants/new')} className="bg-slate-700 hover:bg-slate-650 text-white text-xs font-semibold py-1.5 px-4 rounded-lg">
-                    Criar Primeira Organização
-                  </Button>
                 </div>
               </div>
             )}

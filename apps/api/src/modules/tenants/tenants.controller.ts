@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
   Headers,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
@@ -33,6 +34,9 @@ export class TenantsController {
     @Body() createTenantDto: CreateTenantDto,
     @Req() req: any,
   ) {
+    if (req.user.email !== 'valterpcjr@gmail.com') {
+      throw new ForbiddenException('Apenas o Superadmin pode criar novas organizações.');
+    }
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
     return this.tenantsService.create(createTenantDto, req.user.id, ip, userAgent);
@@ -85,6 +89,9 @@ export class TenantsController {
     @Body() addMemberDto: AddMemberDto,
     @Req() req: any,
   ) {
+    if (req.user.email !== 'valterpcjr@gmail.com') {
+      throw new ForbiddenException('Apenas o Superadmin pode convidar membros para organizações.');
+    }
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
     return this.tenantsService.addMember(id, addMemberDto, req.user.id, ip, userAgent);

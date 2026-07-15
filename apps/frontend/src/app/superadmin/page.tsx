@@ -25,7 +25,8 @@ import {
   ChevronRight,
   Eye,
   CheckCircle,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react';
 
 interface Stats {
@@ -219,12 +220,35 @@ export default function SuperadminDashboard() {
       setActionLoading(id);
       await api.post(`/superadmin/users/${id}/toggle`);
       setUsers(prev => 
-        prev.map(u => u.id === id ? { ...u, isActive: !u.isActive } : u)
+      	prev.map(u => u.id === id ? { ...u, isActive: !u.isActive } : u)
       );
       const statsRes = await api.get<Stats>('/superadmin/stats');
       setStats(statsRes.data);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Erro ao alterar status do usuário.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    if (id === user?.id) {
+      alert('Você não pode excluir seu próprio usuário de administrador.');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Tem certeza de que deseja excluir definitivamente este usuário do sistema? Esta ação é irreversível e apagará todas as associações a organizações e inscrições de eventos.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setActionLoading(id);
+      await api.delete(`/superadmin/users/${id}`);
+      setUsers(prev => prev.filter(u => u.id !== id));
+      const statsRes = await api.get<Stats>('/superadmin/stats');
+      setStats(statsRes.data);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao excluir o usuário.');
     } finally {
       setActionLoading(null);
     }
@@ -629,28 +653,46 @@ export default function SuperadminDashboard() {
                             {u.isActive ? 'Ativo' : 'Suspenso'}
                           </span>
                         </td>
-                        <td className="px-6 py-4.5 text-right">
-                          <Button
-                            onClick={() => toggleUser(u.id)}
-                            disabled={actionLoading === u.id || u.email === 'valterpcjr@gmail.com'}
-                            variant="ghost"
-                            className={`h-8 text-xs font-semibold px-3 rounded-lg border border-slate-800 ${
-                              u.email === 'valterpcjr@gmail.com' 
-                                ? 'opacity-40 cursor-not-allowed'
-                                : u.isActive 
-                                  ? 'text-red-400 hover:text-red-300 hover:bg-red-950/10' 
-                                  : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/10'
-                            }`}
-                          >
-                            {actionLoading === u.id ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <div className="flex items-center space-x-1.5">
-                                <Power className="h-3 w-3" />
-                                <span>{u.isActive ? 'Bloquear' : 'Desbloquear'}</span>
-                              </div>
-                            )}
-                          </Button>
+                        <td className="px-6 py-4.5 text-right font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button
+                              onClick={() => toggleUser(u.id)}
+                              disabled={actionLoading === u.id || u.email === 'valterpcjr@gmail.com'}
+                              variant="ghost"
+                              className={`h-8 text-xs font-semibold px-3 rounded-lg border border-slate-800 ${
+                                u.email === 'valterpcjr@gmail.com' 
+                                  ? 'opacity-45 cursor-not-allowed'
+                                  : u.isActive 
+                                    ? 'text-red-450 hover:text-red-300 hover:bg-red-950/10' 
+                                    : 'text-emerald-450 hover:text-emerald-300 hover:bg-emerald-950/10'
+                              }`}
+                            >
+                              {actionLoading === u.id ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <div className="flex items-center space-x-1.5">
+                                  <Power className="h-3 w-3" />
+                                  <span>{u.isActive ? 'Bloquear' : 'Desbloquear'}</span>
+                                </div>
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => deleteUser(u.id)}
+                              disabled={actionLoading === u.id || u.email === 'valterpcjr@gmail.com'}
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 rounded-lg border border-slate-800 text-red-500 hover:text-red-400 hover:bg-red-955/15 ${
+                                u.email === 'valterpcjr@gmail.com' ? 'opacity-40 cursor-not-allowed' : ''
+                              }`}
+                              title="Excluir Usuário definitivamente do sistema"
+                            >
+                              {actionLoading === u.id ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))

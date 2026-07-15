@@ -1,20 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useTenant } from '@/components/tenant-provider';
+import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewTenant() {
+  const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { selectTenant } = useTenant();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && user && user.email !== 'valterpcjr@gmail.com') {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

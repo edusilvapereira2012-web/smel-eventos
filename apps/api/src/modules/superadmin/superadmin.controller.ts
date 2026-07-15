@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SuperadminService } from './superadmin.service';
 import { SuperadminGuard } from '../../common/guards/superadmin.guard';
@@ -43,6 +43,13 @@ export class SuperadminController {
   @ApiOperation({ summary: 'Ativa ou desativa uma conta de usuário' })
   toggleUser(@Param('id') id: string) {
     return this.superadminService.toggleUserStatus(id);
+  }
+
+  @Delete('users/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exclui definitivamente um usuário do sistema' })
+  deleteUser(@Param('id') id: string) {
+    return this.superadminService.deleteUser(id);
   }
 
   @Get('email/logs')

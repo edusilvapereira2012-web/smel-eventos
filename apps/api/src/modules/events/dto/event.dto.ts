@@ -133,6 +133,10 @@ export class UpdateEventDto {
   @Min(0)
   @IsOptional()
   maxWorkshops?: number;
+
+  @IsString()
+  @IsOptional()
+  justification?: string;
 }
 
 export class ListEventsQueryDto {

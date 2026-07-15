@@ -76,6 +76,7 @@ export default function EventDetailPage() {
   const [categoryId, setCategoryId] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [justification, setJustification] = useState('');
 
   // --- CERTIFICATE STATES ---
   const [certTitle, setCertTitle] = useState('');
@@ -530,7 +531,7 @@ export default function EventDetailPage() {
     setError(null);
     setSuccess(null);
     try {
-      const payload = {
+      const payload: any = {
         title,
         description,
         bannerUrl: bannerUrl || null,
@@ -543,8 +544,17 @@ export default function EventDetailPage() {
         categoryId: categoryId || null,
         maxWorkshops: Number(maxWorkshops),
       };
+      if (user?.email !== 'valterpcjr@gmail.com') {
+        if (!justification || justification.trim() === '') {
+          setError('A justificativa da alteração é obrigatória.');
+          setSaveLoading(false);
+          return;
+        }
+        payload.justification = justification;
+      }
       await api.patch(`/events/${eventId}`, payload);
       setSuccess('Detalhes do evento atualizados com sucesso.');
+      setJustification('');
       loadAll();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao salvar alterações.');
@@ -1167,6 +1177,21 @@ export default function EventDetailPage() {
                       />
                     </div>
                   )}
+
+                  {/* Justification (only for non-superadmin) */}
+                  {user?.email !== 'valterpcjr@gmail.com' && (
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Justificativa da Alteração *</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={justification}
+                        onChange={(e) => setJustification(e.target.value)}
+                        placeholder="Por favor, explique brevemente o motivo desta alteração (ex: ajuste de vagas, alteração de data)..."
+                        className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors resize-none"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end pt-4 border-t border-slate-900">
@@ -1222,7 +1247,7 @@ export default function EventDetailPage() {
                 )}
 
                 {/* Delete */}
-                {event.status === 'DRAFT' && (
+                {event.status === 'DRAFT' && user?.email === 'valterpcjr@gmail.com' && (
                   <Button
                     onClick={handleDeleteEvent}
                     className="w-full bg-red-950/40 hover:bg-red-900 border border-red-900/50 hover:border-red-900 text-red-400 hover:text-white font-bold py-2 rounded-lg transition-all flex items-center justify-center space-x-2"

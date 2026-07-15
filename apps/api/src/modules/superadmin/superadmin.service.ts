@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bullmq';
 import { EmailStatus } from '@prisma/client';
@@ -110,6 +110,24 @@ export class SuperadminService {
     return this.prisma.user.update({
       where: { id },
       data: { isActive: !user.isActive },
+    });
+  }
+
+  async deleteUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (user.email === 'valterpcjr@gmail.com') {
+      throw new BadRequestException('O Superadmin principal não pode ser excluído.');
+    }
+
+    return this.prisma.user.delete({
+      where: { id },
     });
   }
 

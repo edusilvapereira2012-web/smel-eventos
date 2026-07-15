@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api';
 import { EventCategory } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const COLOR_PRESETS = [
 export default function CategoriesPage() {
   const { user, loading: authLoading } = useAuth();
   const { activeTenant } = useTenant();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const router = useRouter();
 
   const [categories, setCategories] = useState<EventCategory[]>([]);
@@ -71,10 +73,16 @@ export default function CategoriesPage() {
       router.push('/login');
       return;
     }
-    if (activeTenant) {
-      fetchCategories();
+    if (!authLoading && user && !permissionsLoading) {
+      if (!hasPermission('events.create')) {
+        router.push('/events');
+        return;
+      }
+      if (activeTenant) {
+        fetchCategories();
+      }
     }
-  }, [activeTenant, authLoading, user]);
+  }, [activeTenant, authLoading, user, permissionsLoading, hasPermission]);
 
   const openCreateModal = () => {
     setEditingCategory(null);
@@ -154,7 +162,7 @@ export default function CategoriesPage() {
     return 'text-slate-200 border-slate-700 bg-slate-800/40';
   };
 
-  if (authLoading || loading) {
+  if (authLoading || permissionsLoading || loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-200">
         <Loader2 className="h-8 w-8 animate-spin text-violet-500" />

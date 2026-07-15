@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api';
 import { Event, EventCategory, EVENT_STATUS_LABELS } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import {
 export default function EventsListPage() {
   const { user, loading: authLoading } = useAuth();
   const { activeTenant } = useTenant();
+  const { hasPermission } = usePermissions();
   const router = useRouter();
 
   const [events, setEvents] = useState<Event[]>([]);
@@ -167,21 +169,25 @@ export default function EventsListPage() {
             <p className="text-slate-400 text-sm mt-1">Gerencie a programação, palestrantes e patrocinadores de seus eventos.</p>
           </div>
           <div className="flex items-center space-x-3 self-start md:self-auto">
-            <Button
-              onClick={() => router.push('/events/categories')}
-              variant="outline"
-              className="border-slate-800 bg-slate-900/20 hover:bg-slate-900 text-slate-300 hover:text-white font-semibold flex items-center space-x-2 py-2 px-5 rounded-lg transition-colors border hover:border-slate-700"
-            >
-              <Tags className="h-4.5 w-4.5 text-violet-400" />
-              <span>Categorias</span>
-            </Button>
-            <Button
-              onClick={() => router.push('/events/new')}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center space-x-2 py-2 px-5 rounded-lg shadow-lg shadow-violet-900/20"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Novo Evento</span>
-            </Button>
+            {hasPermission('events.create') && (
+              <Button
+                onClick={() => router.push('/events/categories')}
+                variant="outline"
+                className="border-slate-800 bg-slate-900/20 hover:bg-slate-900 text-slate-300 hover:text-white font-semibold flex items-center space-x-2 py-2 px-5 rounded-lg transition-colors border hover:border-slate-700"
+              >
+                <Tags className="h-4.5 w-4.5 text-violet-400" />
+                <span>Categorias</span>
+              </Button>
+            )}
+            {hasPermission('events.create') && (
+              <Button
+                onClick={() => router.push('/events/new')}
+                className="bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center space-x-2 py-2 px-5 rounded-lg shadow-lg shadow-violet-900/20"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Novo Evento</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -286,9 +292,11 @@ export default function EventsListPage() {
             <Calendar className="h-12 w-12 text-slate-700 mb-4" />
             <h3 className="font-bold text-lg text-slate-350">Nenhum evento encontrado</h3>
             <p className="text-slate-500 text-sm max-w-sm mt-1">Crie um novo evento ou ajuste as opções de busca do seu painel de filtros.</p>
-            <Button onClick={() => router.push('/events/new')} className="mt-5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-900/40 text-xs font-bold py-2 px-5 rounded-lg">
-              Criar Evento
-            </Button>
+            {hasPermission('events.create') && (
+              <Button onClick={() => router.push('/events/new')} className="mt-5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-900/40 text-xs font-bold py-2 px-5 rounded-lg">
+                Criar Evento
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-8">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { useTenant } from '@/components/tenant-provider';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api';
 import { EventCategory } from '@/lib/events.types';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, AlertTriangle } fr
 export default function NewEventPage() {
   const { user, loading: authLoading } = useAuth();
   const { activeTenant } = useTenant();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const router = useRouter();
 
   const [categories, setCategories] = useState<EventCategory[]>([]);
@@ -32,10 +34,15 @@ export default function NewEventPage() {
   const [capacity, setCapacity] = useState<number>(100);
   const [categoryId, setCategoryId] = useState('');
 
-  // Fetch categories on mount
+  // Fetch categories on mount and check permissions
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+      return;
+    }
+
+    if (!authLoading && !permLoading && !hasPermission('events.create')) {
+      router.push('/events');
       return;
     }
     
@@ -50,10 +57,10 @@ export default function NewEventPage() {
       }
     };
 
-    if (activeTenant) {
+    if (activeTenant && !permLoading && hasPermission('events.create')) {
       fetchCategories();
     }
-  }, [activeTenant, authLoading, user]);
+  }, [activeTenant, authLoading, user, permLoading, hasPermission]);
 
   // Handle banner upload
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +125,7 @@ export default function NewEventPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || permLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-200">
         <Loader2 className="h-8 w-8 animate-spin text-violet-500" />

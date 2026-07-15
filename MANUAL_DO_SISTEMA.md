@@ -11,9 +11,9 @@ A plataforma utiliza um controle de acesso baseado em funções (RBAC - Role-Bas
 
 | Cargo | Descrição Geral | Principais Ações Permitidas | Ações Restritas |
 | :--- | :--- | :--- | :--- |
-| **Proprietário (Owner)** | Controle total e irrestrito sobre a organização no sistema. | - Modificar dados cadastrais da organização.<br>- Gerenciar membros (adicionar/remover/mudar cargos).<br>- Gerenciar eventos (criar/editar/deletar).<br>- Visualizar logs de auditoria e segurança.<br>- Ações de manutenção avançada (ex: reprocessar e-mails). | Nenhuma (permissão máxima). |
-| **Administrador (Admin)** | Alta gerência operacional e administrativa da organização. | - Modificar dados cadastrais da organização.<br>- Gerenciar membros (adicionar/remover/mudar cargos).<br>- Gerenciar eventos (criar/editar/deletar). | - Visualizar logs de auditoria e segurança (`audit-logs.view`).<br>- Demitir ou alterar permissões de Proprietários. |
-| **Organizador** | Gestão direta e operacional dos eventos. | - Criar, atualizar, visualizar e excluir eventos.<br>- Controlar e monitorar check-ins de participantes. | - Alterar dados da organização (nome, logo, etc.).<br>- Gerenciar membros da equipe.<br>- Visualizar logs de segurança ou dados sensíveis de inscritos (ex: CPF completo). |
+| **Proprietário (Owner)** | Controle total e irrestrito sobre a organização no sistema. | - Modificar dados cadastrais da organização.<br>- Gerenciar membros (adicionar/remover/mudar cargos).<br>- Gerenciar eventos (criar/editar/deletar).<br>- Visualizar logs de auditoria e segurança.<br>- Ações de manutenção avançada (ex: reprocessar e-mails). | - Criar novas organizações ou enviar convites para participação em organizações (exclusivo do Superadmin). |
+| **Administrador (Admin)** | Alta gerência operacional e administrativa da organização. | - Modificar dados cadastrais da organização.<br>- Gerenciar membros (adicionar/remover/mudar cargos).<br>- Gerenciar eventos (criar/editar/deletar). | - Criar novas organizações ou enviar convites para participação em organizações (exclusivo do Superadmin).<br>- Visualizar logs de auditoria e segurança (`audit-logs.view`).<br>- Demitir ou alterar permissões de Proprietários. |
+| **Organizador** | Gestão direta e operacional dos eventos. | - Visualizar eventos.<br>- Atualizar/Editar dados de eventos (vagas, horários, etc.), sendo **obrigatório fornecer uma justificativa por escrito**.<br>- Controlar e monitorar check-ins de participantes. | - Criar novos eventos ou categorias de eventos.<br>- Excluir ou deletar eventos do sistema.<br>- Alterar dados da organização (nome, logo, etc.).<br>- Gerenciar membros da equipe.<br>- Visualizar logs de segurança ou dados sensíveis de inscritos (ex: CPF completo). |
 | **Checker (Validador)** | Operação de portaria, credenciamento e validação no local. | - Visualizar lista e detalhes operacionais básicos de eventos.<br>- Realizar o check-in/presença dos participantes (leitura de QR Code ou código). | - Criar, editar ou excluir eventos.<br>- Acessar o dashboard administrativo de métricas gerais. |
 | **Membro** | Acesso básico de leitura e observação. | - Visualizar a lista de eventos e detalhes operacionais básicos. | - Realizar check-ins ou alterações em eventos.<br>- Acessar qualquer área administrativa. |
 
@@ -32,13 +32,16 @@ Ao acessar a rota `/superadmin` (ou clicar em **Painel Superadmin** na página i
 1.  **Monitoramento de Métricas Globais**: Visualizar a contagem total de organizações, usuários cadastrados, eventos criados e inscrições realizadas em toda a plataforma.
 2.  **Gestão de Organizações**: 
     *   Listar todas as organizações com seus slugs, quantidade de membros e eventos.
+    *   **Criar Novas Organizações**: Apenas o Superadmin tem permissão para criar organizações no sistema.
+    *   **Enviar Convites**: Apenas o Superadmin pode enviar convites para participação em organizações.
     *   **Ativar/Desativar Organização**: O Superadmin pode desativar qualquer organização.
 3.  **Gestão de Usuários**:
     *   Listar todos os usuários da plataforma com estatísticas de participação e verificação de e-mail.
     *   **Bloquear/Desbloquear Conta**: O Superadmin pode desativar o acesso de qualquer usuário ao sistema.
+    *   **Excluir Usuário do Sistema**: O Superadmin pode deletar permanentemente usuários do sistema. Esta ação apaga em cascata suas filiações a organizações e inscrições de eventos, mantendo o histórico de auditoria intacto com dados anonimizados. A auto-exclusão e exclusão do Superadmin principal são bloqueadas.
 
 ### Segurança e Criação de Contas (Hardening)
-*   **Auto-cadastro desativado**: Para evitar a criação indiscriminada de novas contas organizadoras sem validação prévia, o link de auto-cadastro na tela de login foi removido. Novos organizadores devem ter suas contas criadas diretamente pelo Superadmin ou por um proprietário (Owner) através de convites internos.
+*   **Auto-cadastro desativado**: Para evitar a criação indiscriminada de novas contas organizadoras sem validação prévia, o link de auto-cadastro na tela de login foi removido. Novos organizadores devem ter suas contas criadas diretamente pelo Superadmin.
 *   **Interface de Produção Limpa**: O sistema está 100% livre de referências internas de desenvolvimento, como tags de levas ou badges de depuração, garantindo uma identidade visual limpa e profissional para a prefeitura e parceiros.
 
 ### Regra de Negócio: Bloqueio de Organizações (isActive)

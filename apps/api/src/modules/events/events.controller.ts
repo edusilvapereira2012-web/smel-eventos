@@ -11,6 +11,8 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { EventsService } from './events.service';
@@ -87,7 +89,7 @@ export class EventsController {
   }
 
   @Patch('categories/:id')
-  @RequirePermission('events.update')
+  @RequirePermission('events.create')
   @ApiHeader({ name: 'x-tenant-id', required: true, description: 'ID do Tenant ativo' })
   @ApiOperation({ summary: 'Atualiza uma categoria' })
   updateCategory(
@@ -139,8 +141,16 @@ export class EventsController {
     @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
     @Headers('x-tenant-id') tenantId: string,
+    @Req() req: any,
   ) {
-    return this.eventsService.update(id, updateEventDto, tenantId);
+    if (req.user.email !== 'valterpcjr@gmail.com') {
+      if (!updateEventDto.justification || updateEventDto.justification.trim() === '') {
+        throw new BadRequestException('A justificativa da edição é obrigatória para organizadores/admins.');
+      }
+    }
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.eventsService.update(id, updateEventDto, tenantId, req.user.id, ip, userAgent);
   }
 
   @Delete(':id')
@@ -151,7 +161,11 @@ export class EventsController {
   remove(
     @Param('id') id: string,
     @Headers('x-tenant-id') tenantId: string,
+    @Req() req: any,
   ) {
+    if (req.user.email !== 'valterpcjr@gmail.com') {
+      throw new ForbiddenException('Apenas o Superadmin pode excluir eventos.');
+    }
     return this.eventsService.remove(id, tenantId);
   }
 

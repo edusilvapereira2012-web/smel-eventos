@@ -34,6 +34,7 @@ export default function EditEventPage() {
   const [endDate, setEndDate] = useState('');
   const [capacity, setCapacity] = useState<number>(100);
   const [categoryId, setCategoryId] = useState('');
+  const [justification, setJustification] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -109,7 +110,7 @@ export default function EditEventPage() {
     setSuccess(null);
 
     try {
-      const payload = {
+      const payload: any = {
         title,
         description: description || undefined,
         bannerUrl: bannerUrl || undefined,
@@ -121,6 +122,15 @@ export default function EditEventPage() {
         capacity: Number(capacity),
         categoryId: categoryId || undefined,
       };
+
+      if (user?.email !== 'valterpcjr@gmail.com') {
+        if (!justification || justification.trim() === '') {
+          setError('A justificativa da alteração é obrigatória.');
+          setSubmitLoading(false);
+          return;
+        }
+        payload.justification = justification;
+      }
 
       await api.patch(`/events/${eventId}`, payload);
       setSuccess('Evento atualizado com sucesso.');
@@ -339,6 +349,21 @@ export default function EditEventPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none"
+                />
+              </div>
+            )}
+
+            {/* Justification (only for non-superadmin) */}
+            {user?.email !== 'valterpcjr@gmail.com' && (
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Justificativa da Alteração *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={justification}
+                  onChange={(e) => setJustification(e.target.value)}
+                  placeholder="Por favor, explique brevemente o motivo desta alteração (ex: ajuste de vagas, alteração de data)..."
+                  className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors resize-none"
                 />
               </div>
             )}

@@ -45,3 +45,11 @@ Thumbs.db
 
 # Local database/storage volumes
 infra/minio_data/
+
+# Archives and deployments
+deploy.tar.gz
+*.tar.gz
+*.zip
+*.rar
+*.tar
+

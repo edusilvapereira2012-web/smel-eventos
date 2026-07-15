@@ -206,10 +206,11 @@ export class EventsService {
     return event;
   }
 
-  async update(id: string, updateEventDto: UpdateEventDto, tenantId: string) {
+  async update(id: string, updateEventDto: UpdateEventDto, tenantId: string, userId?: string, ip?: string, userAgent?: string) {
     const event = await this.findOne(id, tenantId);
 
-    const updateData: any = { ...updateEventDto };
+    const { justification, ...restDto } = updateEventDto;
+    const updateData: any = { ...restDto };
 
     if (updateEventDto.startDate) {
       updateData.startDate = new Date(updateEventDto.startDate);
@@ -248,6 +249,27 @@ export class EventsService {
       where: { id },
       data: updateData,
     });
+
+    if (userId) {
+      const changes: string[] = [];
+      for (const key of Object.keys(restDto)) {
+        if ((event as any)[key] !== (updatedEvent as any)[key]) {
+          changes.push(key);
+        }
+      }
+      await this.auditLog.log(
+        userId,
+        'UPDATE_EVENT',
+        'event',
+        id,
+        {
+          justification: justification || null,
+          changes,
+        },
+        ip,
+        userAgent,
+      );
+    }
 
     await this.invalidateEventCache(id, tenantId, event.slug);
     if (updatedEvent.slug !== event.slug) {
