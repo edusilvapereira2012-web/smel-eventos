@@ -313,7 +313,7 @@ export default function ManualPage() {
                     A plataforma utiliza travas pessimistas no banco de dados (<code>SELECT FOR UPDATE</code>) para garantir que o limite de vagas de um evento seja estritamente respeitado, mesmo em cenários de alta concorrência.
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
-                    Quando o número limite de vagas é alcançado, novos inscritos entram automaticamente na <strong>Fila de Espera (Waitlist)</strong>. Se uma vaga confirmada for liberada (cancelamento), o sistema automaticamente promove a inscrição mais antiga da fila para "Confirmada" e dispara um e-mail de aviso.
+                    Quando o número limite de vagas é alcançado, novos inscritos entram automaticamente na <strong>Fila de Espera (Waitlist)</strong>. Se uma vaga confirmada for liberada (cancelamento), o sistema automaticamente promove a inscrição mais antiga da fila para &quot;Confirmada&quot; e dispara um e-mail de aviso.
                   </p>
                 </div>
 
@@ -440,7 +440,7 @@ export default function ManualPage() {
                     <li>CPF do Participante</li>
                   </ul>
                   <p className="text-xs text-slate-450">
-                    Basta clicar em <strong>"Confirmar Presença"</strong> na linha do participante correspondente após a validação física de sua identidade.
+                    Basta clicar em <strong>&quot;Confirmar Presença&quot;</strong> na linha do participante correspondente após a validação física de sua identidade.
                   </p>
                 </div>
 
@@ -463,7 +463,7 @@ export default function ManualPage() {
                     4. Sincronização de Dados
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Ao retornar a um local com sinal de internet, acesse a página de sincronização offline e clique no botão <strong>"Sincronizar Check-ins"</strong>. 
+                    Ao retornar a um local com sinal de internet, acesse a página de sincronização offline e clique no botão <strong>&quot;Sincronizar Check-ins&quot;</strong>. 
                   </p>
                   <p className="text-xs text-slate-450">
                     O aplicativo enviará os check-ins realizados no local em lote para a API, que registrará as presenças de forma atômica no banco de dados central.
@@ -503,7 +503,7 @@ export default function ManualPage() {
                     2. Fila de Espera
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Se o evento desejado estiver com todas as vagas esgotadas, você pode clicar em "Inscrever-se na Fila de Espera". Caso algum participante desista, a fila é reprocessada automaticamente e você receberá uma confirmação de participação por e-mail caso sua vaga seja liberada.
+                    Se o evento desejado estiver com todas as vagas esgotadas, você pode clicar em &quot;Inscrever-se na Fila de Espera&quot;. Caso algum participante desista, a fila é reprocessada automaticamente e você receberá uma confirmação de participação por e-mail caso sua vaga seja liberada.
                   </p>
                 </div>
 
@@ -523,7 +523,7 @@ export default function ManualPage() {
                     4. Emissão de Certificados Digitais
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Após a finalização do evento, se o seu check-in tiver sido confirmado pela equipe organizadora, o botão <strong>"Emitir Certificado"</strong> estará liberado na sua página de ingressos. 
+                    Após a finalização do evento, se o seu check-in tiver sido confirmado pela equipe organizadora, o botão <strong>&quot;Emitir Certificado&quot;</strong> estará liberado na sua página de ingressos. 
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
                     O certificado é gerado em formato PDF de alta definição, assinado digitalmente pela instituição organizadora, e inclui um QR Code público para validação de autenticidade por terceiros.
