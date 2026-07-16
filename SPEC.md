@@ -50,11 +50,18 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 
 ## 3. Especificações dos Módulos Core
 
-### 3.1. Autenticação e Segurança (Leva 02)
+### 3.1. Autenticação e Segurança (Leva 02 / Leva 13)
 * **Sessão Rotativa (JWT + HttpOnly Cookies)**:
   * O login gera um Access Token de 15 minutos (retornado em JSON) e um Refresh Token de 7 dias (injetado via cookie `HttpOnly`, `Secure`, `SameSite: Strict`).
   * Armazenamento e rotação dos tokens de atualização no Redis/Valkey (`refresh:${userId}:${tokenId}`) para revogação imediata no logout.
   * Fluxo silencioso de revalidação de tokens no cliente via interceptadores Axios (escuta `401 Unauthorized` e realiza o refresh automático).
+* **Sessão Segura por Aba (sessionStorage)**:
+  * O frontend grava a flag `smel_session_active = 'true'` no `sessionStorage` somente após login bem-sucedido.
+  * Ao carregar o aplicativo (montagem inicial no `AuthProvider`), se a flag no `sessionStorage` não estiver presente (nova aba, janela fechada ou URL digitada diretamente), a renovação automática da sessão via cookie HttpOnly (`/auth/refresh`) é ignorada. Isso previne que a sessão antiga seja aberta automaticamente em abas novas ou navegadores recém-abertos.
+  * A flag é limpa no `sessionStorage` ao realizar logout ou ao falhar na renovação automática do token (erro 401).
+* **Revelador de Senha (Password Visibility Toggle)**:
+  * Botão de visibilidade com ícone dinâmico (`Eye` e `EyeOff` da biblioteca `lucide-react`) integrado nos inputs de senha das telas de **Login** (`/login`), **Cadastro** (`/register`) e **Redefinição de Senha** (`/reset-password`).
+  * Altera dinamicamente o atributo `type` do campo de senha entre `password` e `text`, garantindo o alinhamento visual e padding adequado para evitar sobreposição de caracteres com o ícone.
 
 ### 3.2. Multi-Tenancy e RBAC (Leva 03)
 * **Isolamento de Dados**:

@@ -147,4 +147,18 @@ O sistema conta com um **Manual Interativo** integrado diretamente na interface 
 * **Administrador**: Manual completo de controle do inquilino (gestão de membros, exclusão de eventos/categorias, LGPD e monitor de e-mails).
 * **Superadmin**: Acesso irrestrito a todas as abas, somando-se as instruções de ativação/desativação de organizações, envio de convites e exclusão definitiva de usuários com deleção em cascata no banco.
 
+---
+
+## 8. Recursos de Segurança e Usabilidade no Acesso
+
+### 8.1. Proteção de Sessão por Aba (sessionStorage)
+Para evitar o restabelecimento automático de sessões antigas quando o usuário apenas digita a URL do sistema em uma nova aba do navegador, a plataforma armazena uma chave temporária no `sessionStorage`. 
+* **Como funciona:** O auto-login (renovação do cookie HttpOnly) só é executado se a aba atual possuir o registro ativo de sessão. Caso a aba/janela seja nova, o usuário será direcionado com segurança para a tela de login. O botão de "Sair" ou falhas críticas de conexão limpam imediatamente essa chave para garantir a segurança.
+
+### 8.2. Botão de Revelar Senha (Olho)
+Para melhorar a experiência do usuário e evitar digitação incorreta em telas sensíveis, foi adicionada a funcionalidade de revelador de senha:
+* **Onde encontrar:** Disponível no canto direito do campo de senha nas páginas de **Login**, **Cadastro** e **Redefinição de Senha**.
+* **Como funciona:** O ícone alterna visualmente (exibindo um olho aberto ou fechado com uma barra) e altera o tipo do campo entre texto oculto e texto visível.
+
+
 
