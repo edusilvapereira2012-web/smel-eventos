@@ -106,6 +106,7 @@ api.interceptors.response.use(
         setAccessToken(null);
 
         if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('smel_session_active');
           // Apenas redireciona se não for na página de login ou registro
           if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
             window.location.href = '/login';

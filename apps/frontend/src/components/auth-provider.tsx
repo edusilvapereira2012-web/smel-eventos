@@ -52,6 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await api.post('/auth/login', { email, password });
     const { access_token } = response.data;
     setAccessToken(access_token);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('smel_session_active', 'true');
+    }
     await fetchCurrentUser();
   };
 
@@ -64,13 +67,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setAccessToken(null);
       if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('smel_session_active');
         window.location.href = '/login';
       }
     }
   };
 
   useEffect(() => {
-    refreshSession();
+    const checkAndRefresh = async () => {
+      if (typeof window !== 'undefined' && sessionStorage.getItem('smel_session_active') === 'true') {
+        await refreshSession();
+      } else {
+        setUser(null);
+        setAccessToken(null);
+        setLoading(false);
+      }
+    };
+    checkAndRefresh();
   }, []);
 
   return (
