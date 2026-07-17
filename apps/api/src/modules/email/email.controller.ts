@@ -30,7 +30,7 @@ export class EmailController {
 
   @Get('logs')
   @RequirePermission('tenants.update')
-  @ApiOperation({ summary: 'Lista os logs de e-mail do inquilino ativo' })
+  @ApiOperation({ summary: 'Lista os logs de e-mail da organização ativa' })
   async getLogs(
     @Req() req: any,
     @Query('status') status?: EmailStatus,
@@ -83,7 +83,7 @@ export class EmailController {
 
   @Get('stats')
   @RequirePermission('tenants.update')
-  @ApiOperation({ summary: 'Retorna estatísticas de envios de e-mail do inquilino' })
+  @ApiOperation({ summary: 'Retorna estatísticas de envios de e-mail da organização' })
   async getStats(@Req() req: any) {
     const tenantId = req.headers['x-tenant-id'] as string;
 
@@ -122,7 +122,7 @@ export class EmailController {
     });
 
     if (!emailLog || emailLog.tenantId !== tenantId) {
-      throw new NotFoundException('Log de e-mail não encontrado para o inquilino ativo.');
+      throw new NotFoundException('Log de e-mail não encontrado para a organização ativa.');
     }
 
     // Atualiza status para PENDING e reseta tentativas
@@ -154,7 +154,7 @@ export class EmailController {
   }
 
   @Post('retry-dead')
-  @ApiOperation({ summary: 'Re-enfileira todos os e-mails DEAD do inquilino ativo (Apenas OWNER)' })
+  @ApiOperation({ summary: 'Re-enfileira todos os e-mails DEAD da organização ativa (Apenas OWNER)' })
   @HttpCode(HttpStatus.OK)
   async retryDeadEmails(@Req() req: any) {
     const tenantId = req.headers['x-tenant-id'] as string;
@@ -163,7 +163,7 @@ export class EmailController {
     const isSuperAdmin = req.user?.email === 'valterpcjr@gmail.com';
 
     if (!isSuperAdmin) {
-      // Valida se o usuário é OWNER do inquilino
+      // Valida se o usuário é OWNER da organização
       const membership = await this.prisma.tenantMembership.findUnique({
         where: {
           tenantId_userId: {
@@ -174,7 +174,7 @@ export class EmailController {
       });
 
       if (!membership || membership.role !== 'OWNER') {
-        throw new ForbiddenException('Apenas o proprietário (OWNER) do inquilino pode realizar esta ação.');
+        throw new ForbiddenException('Apenas o proprietário (OWNER) da organização pode realizar esta ação.');
       }
     }
 

@@ -9,7 +9,7 @@ Esta é a API central do ecossistema SMEL-Plataforma de Eventos, desenvolvida co
 * **Framework**: NestJS
 * **ORM**: Prisma (PostgreSQL)
 * **Caching & Session Storage**: Redis / Valkey
-* **Real-time Gateway**: Socket.io (Namespaces dinâmicos por inquilino)
+* **Real-time Gateway**: Socket.io (Namespaces dinâmicos por organização)
 * **Auditoria**: AuditLog integrado por Interceptores globais
 * **Segurança**: Rate limiting com `@nestjs/throttler` (Redis Storage), CORS dinâmico e `helmet` middleware.
 

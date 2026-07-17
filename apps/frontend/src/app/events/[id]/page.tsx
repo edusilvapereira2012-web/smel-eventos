@@ -2052,7 +2052,7 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                     <div className="text-3xs text-slate-500 border-t border-slate-900 pt-4">
-                      Observação: O logotipo do inquilino (definido nas configurações da conta) é exibido automaticamente no cabeçalho do certificado no modelo padrão.
+                      Observação: O logotipo da organização (definido nas configurações da conta) é exibido automaticamente no cabeçalho do certificado no modelo padrão.
                     </div>
                   </div>
                 </>

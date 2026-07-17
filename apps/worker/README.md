@@ -20,7 +20,7 @@ Este é o microserviço isolado do **SMEL-Plataforma de Eventos** encarregado do
    * Política de retry automática com backoff exponencial.
    * Registro do status final de envio no banco de dados (`EmailLog`).
 2. **`generate-certificate`**:
-   * Gera arquivos PDF em formato paisagem baseados no template do inquilino.
+   * Gera arquivos PDF em formato paisagem baseados no template da organização.
    * Cria QR Code público vetorial.
    * Realiza upload automático do arquivo gerado para o bucket do MinIO (S3).
 3. **`retention`**:

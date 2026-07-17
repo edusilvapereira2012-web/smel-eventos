@@ -206,10 +206,10 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Database className="h-4.5 w-4.5 text-violet-400" />
-                    1. Gestão Global de Organizações (Tenants)
+                    1. Gestão Global de Organizações
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Como Superadmin, você tem visão de todas as organizações da plataforma. No menu do Superadmin, é possível ativar e desativar qualquer inquilino.
+                    Como Superadmin, você tem visão de todas as organizações da plataforma. No menu do Superadmin, é possível ativar e desativar qualquer organização.
                   </p>
                   <div className="p-3 bg-violet-950/20 border border-violet-900/30 rounded-lg text-xs text-violet-300">
                     <strong>Regra de Negócio:</strong> A desativação é <em>segura</em>. Altera o campo <code>isActive</code> no banco para <code>false</code>. Nenhum evento ou dado é deletado fisicamente, permitindo a restauração a qualquer momento. O interceptador <code>TenantInterceptor</code> bloqueará todos os acessos a organizações inativas imediatamente com <code>403 Forbidden</code>.
@@ -303,7 +303,7 @@ export default function ManualPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-100">Manual do Administrador / Dono</h2>
-                  <p className="text-xs text-emerald-400/80 font-medium">Controle e gestão operacional do seu Tenant</p>
+                  <p className="text-xs text-emerald-400/80 font-medium">Controle e gestão operacional da sua Organização</p>
                 </div>
               </div>
 
@@ -327,7 +327,7 @@ export default function ManualPage() {
                     2. Equipe e Membros da Organização
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Você pode listar e gerenciar a equipe do seu inquilino:
+                    Você pode listar e gerenciar a equipe da sua organização:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li>Promover membros a <strong>Admin</strong>, <strong>Organizador</strong> ou <strong>Checker</strong>.</li>
@@ -389,7 +389,7 @@ export default function ManualPage() {
                     Como Organizador, você pode alterar detalhes operacionais de um evento existente (quantidade de vagas, local, horários, cronogramas). No entanto, toda alteração <strong>exige obrigatoriamente uma justificativa por escrito</strong> no formulário.
                   </p>
                   <p className="text-xs text-slate-450">
-                    Essa justificativa é gravada permanentemente no log de auditoria do inquilino para garantir transparência nas modificações operacionais realizadas pela prefeitura ou organizadores autorizados.
+                    Essa justificativa é gravada permanentemente no log de auditoria da organização para garantir transparência nas modificações operacionais realizadas pela prefeitura ou organizadores autorizados.
                   </p>
                 </div>
 

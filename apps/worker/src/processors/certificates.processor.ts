@@ -62,7 +62,7 @@ export class CertificatesProcessor implements OnModuleInit {
     const { registrationId, tenantId, eventId } = job.data;
     this.logger.log(`[Job ${job.id}] Iniciando geração de certificado para inscrição ${registrationId}`, 'CertificatesProcessor');
 
-    // 1. Buscar inscrição, evento e inquilino
+    // 1. Buscar inscrição, evento e organização
     const registration = await this.prisma.registration.findUnique({
       where: { id: registrationId },
       include: { event: true },
@@ -77,7 +77,7 @@ export class CertificatesProcessor implements OnModuleInit {
     });
 
     if (!tenant) {
-      throw new Error(`Inquilino ${tenantId} não encontrado.`);
+      throw new Error(`Organização ${tenantId} não encontrada.`);
     }
 
     // 2. Gerar código único e URL de validação
@@ -370,7 +370,7 @@ export class CertificatesProcessor implements OnModuleInit {
         color: rgb(0.38, 0.18, 0.89),
       });
 
-      // Carregar e desenhar logo do Tenant
+      // Carregar e desenhar logo da Organização
       let logoImage;
       if (tenant.logoUrl) {
         try {
@@ -389,7 +389,7 @@ export class CertificatesProcessor implements OnModuleInit {
             }
           }
         } catch (e: any) {
-          this.logger.error(`Erro ao carregar o logo do Tenant: ${e.message}`, undefined, 'CertificatesProcessor');
+          this.logger.error(`Erro ao carregar o logo da Organização: ${e.message}`, undefined, 'CertificatesProcessor');
         }
       }
 

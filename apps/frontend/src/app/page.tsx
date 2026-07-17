@@ -81,7 +81,7 @@ export default function Home() {
                 Olá, {user.name}!
               </h1>
               <p className="text-slate-400 text-sm">
-                Inquilinos isolados, cache Redis/Valkey, controle de acessos RBAC granular e logs de auditoria em conformidade com LGPD.
+                Organizações isoladas, cache Redis/Valkey, controle de acessos RBAC granular e logs de auditoria em conformidade com LGPD.
               </p>
             </div>
 
@@ -103,7 +103,7 @@ export default function Home() {
                     <p className="font-bold text-violet-400 mt-1">{role || 'Membro'}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-900">
-                    <span className="text-xs text-slate-500 uppercase font-semibold">Status do Tenant</span>
+                    <span className="text-xs text-slate-500 uppercase font-semibold">Status da Organização</span>
                     <p className="font-bold text-emerald-400 mt-1">Ativo e Seguro</p>
                   </div>
                 </div>
@@ -151,12 +151,12 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="p-6 bg-slate-900/30 rounded-xl border border-slate-900 space-y-2">
-              <h3 className="font-bold text-slate-200">Isolamento Multi-Tenant</h3>
+              <h3 className="font-bold text-slate-200">Isolamento de Organizações</h3>
               <p className="text-xs text-slate-400">Dados do banco e logs isolados a nível de consulta e controle com interceptadores e middleware robustos.</p>
             </div>
             <div className="p-6 bg-slate-900/30 rounded-xl border border-slate-900 space-y-2">
               <h3 className="font-bold text-slate-200">Cache com Redis/Valkey</h3>
-              <p className="text-xs text-slate-400">Os dados de inquilino são validados e cacheados por 5 minutos para otimização de latência e chamadas ao banco.</p>
+              <p className="text-xs text-slate-400">Os dados da organização são validados e cacheados por 5 minutos para otimização de latência e chamadas ao banco.</p>
             </div>
           </div>
         </div>

@@ -641,7 +641,7 @@ export default function CertificateEditor({
               Dê um duplo clique ou selecione o elemento no menu lateral para focar nele.
             </p>
             <p className="leading-relaxed">
-              Você pode carregar assinaturas digitais na caixa abaixo nas opções normais de certificados do inquilino.
+              Você pode carregar assinaturas digitais na caixa abaixo nas opções normais de certificados da organização.
             </p>
           </div>
         </div>

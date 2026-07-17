@@ -36,9 +36,9 @@ graph TD
 O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inquilinato (multi-tenancy) e trilhas de auditoria:
 
 * **`User`**: Cadastro de usuários com autenticação de dois fatores e controle de status.
-* **`Tenant`**: Entidade inquilina (empresa/organização) que encapsula seus próprios eventos e configurações de certificados.
+* **`Tenant`**: Entidade da organização (empresa/organização) que encapsula seus próprios eventos e configurações de certificados.
 * **`TenantMembership`**: Tabela associativa entre `User` e `Tenant`, contendo o campo `role` (`OWNER`, `ADMIN`, `ORGANIZER`, `CHECKER`, `MEMBER`).
-* **`Event`**: Eventos pertencentes a um inquilino com status (`DRAFT`, `PUBLISHED`, `FINISHED`, `CANCELLED`) e slug amigável (slugificação com autoincremento para evitar conflitos dentro do mesmo inquilino).
+* **`Event`**: Eventos pertencentes a uma organização com status (`DRAFT`, `PUBLISHED`, `FINISHED`, `CANCELLED`) e slug amigável (slugificação com autoincremento para evitar conflitos dentro da mesma organização).
 * **`Category`, `Speaker`, `Sponsor`, `Schedule`**: Entidades acessórias e cronograma do evento.
 * **`Registration`**: Inscrição vinculando `User` e `Event`, com status (`CONFIRMED`, `WAITLIST`, `CANCELLED`, `TRANSFERRED`) e dados sensíveis criptografados.
 * **`CheckIn`**: Registro atômico de entrada do participante (portaria física), controlando duplicidade e operado offline/online.
@@ -66,10 +66,10 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 ### 3.2. Multi-Tenancy e RBAC (Leva 03)
 * **Isolamento de Dados**:
   * Injeção obrigatória do cabeçalho `X-Tenant-ID` nas requisições administrativas.
-  * O `TenantInterceptor` valida a associação e injeta o objeto inquilino no contexto.
+  * O `TenantInterceptor` valida a associação e injeta o objeto da organização no contexto.
   * Repositórios de banco herdam `TenantBaseRepository` que automaticamente concatena a cláusula `WHERE tenantId = :tenantId` nas queries, impedindo vazamento de dados.
 * **Guarda de Permissões (RBAC)**:
-  * Papéis atribuídos por organização. O decorador `@RequirePermission(...)` valida se o membro possui os privilégios mínimos de ação no inquilino correspondente antes de liberar o acesso à rota.
+  * Papéis atribuídos por organização. O decorador `@RequirePermission(...)` valida se o membro possui os privilégios mínimos de ação na organização correspondente antes de liberar o acesso à rota.
   * Restrições e privilégios específicos:
     * **Criação e Deleção**: Apenas `ADMIN`/`OWNER` (e o Superadmin) têm as permissões `events.create` e `events.delete` para criar e deletar eventos, bem como criar/editar categorias de eventos. O papel `ORGANIZER` não possui esses privilégios.
     * **Justificativa de Edição**: Embora o papel `ORGANIZER` possa editar detalhes operacionais do evento (como horários e vagas), toda atualização de evento exige obrigatoriamente o envio de uma justificativa textual detalhada, a qual é registrada no `AuditLog`.
@@ -111,7 +111,7 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Configuração de SMTP em Produção**: O sistema utiliza autenticação SMTP via porta `587` (TLS) com o e-mail institucional `eventos@educacao.luziania.go.gov.br`. Para contornar bloqueios de comunicação de rede na mesma sub-rede da VPS e do servidor de correio (isolamento de layer 2 do provedor), foi estabelecida uma rota persistente via gateway no Netplan (`/etc/netplan/99-custom-routes.yaml`), garantindo a entrega direta.
 
 ### 3.8. Dashboards e WebSocket (Leva 09)
-* **Cache de Métricas**: Indicadores de visão geral do inquilino cacheados no Redis com TTL de 5 minutos.
+* **Cache de Métricas**: Indicadores de visão geral da organização cacheados no Redis com TTL de 5 minutos.
 * **Feeds em Tempo Real**: Websocket (`Socket.io`) estruturado por namespaces por Tenant (`/tenant-{tenantId}`) que envia transmissões imediatas de novos check-ins e alterações de inscrições para atualização dinâmica dos painéis sem refresh.
 
 ### 3.9. Gestão de Oficinas e Palestrantes (Leva 12)
@@ -164,7 +164,7 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Autenticação Restrita**: Rota do painel de administração global (`/superadmin`) e seus endpoints backend correspondentes protegidos por `SuperadminGuard`.
 * **Identidade Única**: O e-mail `valterpcjr@gmail.com` é configurado como o único Superadmin do ecossistema. Qualquer requisição de outros usuários a endpoints sob o escopo do guard é rejeitada com `403 Forbidden`.
 * **Segurança de Escopo (`@SkipTenant`)**: Os endpoints do Superadmin usam a anotação `@SkipTenant()` para ignorar o requisito padrão de cabeçalho `X-Tenant-ID`, permitindo consultas globais de estatísticas, tenants e usuários.
-* **Criação de Organizações e Convites**: A criação de novas organizações (`Tenant`) e o envio de novos convites de participação no sistema são restritos unicamente ao Superadmin. Administradores comuns de inquilinos (`ADMIN`/`OWNER`) não têm permissão para criar organizações ou enviar novos convites globais.
+* **Criação de Organizações e Convites**: A criação de novas organizações (`Tenant`) e o envio de novos convites de participação no sistema são restritos unicamente ao Superadmin. Administradores comuns de organizações (`ADMIN`/`OWNER`) não têm permissão para criar organizações ou enviar novos convites globais.
 * **Remoção do Auto-Cadastro (Hardening)**: O link público de auto-cadastro ("Cadastre-se grátis") na tela de login foi completamente removido. O registro de novos usuários organizadores é restrito, exigindo criação administrativa para impedir logins avulsos sem convite.
 * **Exclusão Definitiva de Usuários**: Implementado endpoint seguro de exclusão física `DELETE /superadmin/users/:id` com dupla confirmação no painel frontend. A deleção limpa as tabelas associativas (`TenantMembership` e `Registration`) em cascata, mantendo a integridade histórica de `AuditLog` ao setar referências de usuário deletado como nulas, impedindo a auto-exclusão do administrador operando e do Superadmin principal.
 

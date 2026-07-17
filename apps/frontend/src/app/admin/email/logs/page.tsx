@@ -166,7 +166,7 @@ export default function EmailLogsPage() {
   if (!activeTenant) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-200">
-        <p>Selecione um inquilino para acessar o monitoramento de e-mails.</p>
+        <p>Selecione uma organização para acessar o monitoramento de e-mails.</p>
       </div>
     );
   }

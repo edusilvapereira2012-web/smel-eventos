@@ -20,7 +20,7 @@ export class CertificatesService {
     });
 
     if (!event) {
-      throw new NotFoundException('Evento não encontrado para este inquilino');
+      throw new NotFoundException('Evento não encontrado para esta organização');
     }
 
     // Buscar inscrições confirmadas com check-in e sem certificado gerado

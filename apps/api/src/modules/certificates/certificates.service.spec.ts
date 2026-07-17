@@ -45,7 +45,7 @@ describe('CertificatesService', () => {
   });
 
   describe('generateBatch', () => {
-    it('evento não existe para inquilino → 404', async () => {
+    it('evento não existe para organização → 404', async () => {
       mockPrisma.event.findFirst.mockResolvedValue(null);
 
       await expect(service.generateBatch('event-1', 'tenant-1')).rejects.toThrow(NotFoundException);

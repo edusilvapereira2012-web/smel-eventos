@@ -7,7 +7,7 @@ Este documento serve como referência rápida para consulta sobre as regras de n
 
 ## 1. Controle de Cargos e Permissões (RBAC)
 
-A plataforma utiliza um controle de acesso baseado em funções (RBAC - Role-Based Access Control) que divide os usuários da equipe organizadora em cinco níveis de permissão dentro de cada inquilino (organização):
+A plataforma utiliza um controle de acesso baseado em funções (RBAC - Role-Based Access Control) que divide os usuários da equipe organizadora em cinco níveis de permissão dentro de cada organização:
 
 | Cargo | Descrição Geral | Principais Ações Permitidas | Ações Restritas |
 | :--- | :--- | :--- | :--- |
@@ -144,7 +144,7 @@ O sistema conta com um **Manual Interativo** integrado diretamente na interface 
 * **Membro**: Visualiza instruções sobre inscrições em eventos, fila de espera automática, uso de ingresso digital e download de certificados.
 * **Checker**: Acesso às orientações para operação do scanner de QR Codes na portaria, buscas manuais de inscritos por CPF/Nome, download offline de dados e sincronização pós-evento.
 * **Organizador**: Acesso aos guias para edição operacional de eventos exigindo justificativa obrigatória registrada na auditoria, além de suas restrições (ex: impossibilidade de criar ou deletar eventos/categorias).
-* **Administrador**: Manual completo de controle do inquilino (gestão de membros, exclusão de eventos/categorias, LGPD e monitor de e-mails).
+* **Administrador**: Manual completo de controle da organização (gestão de membros, exclusão de eventos/categorias, LGPD e monitor de e-mails).
 * **Superadmin**: Acesso irrestrito a todas as abas, somando-se as instruções de ativação/desativação de organizações, envio de convites e exclusão definitiva de usuários com deleção em cascata no banco.
 
 ---
