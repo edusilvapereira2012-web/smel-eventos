@@ -54,9 +54,9 @@ export default function CategoriesPage() {
   const [deleteConfirmCategory, setDeleteConfirmCategory] = useState<EventCategory | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (showGlobalLoader = false) => {
     if (!activeTenant) return;
-    setLoading(true);
+    if (showGlobalLoader) setLoading(true);
     try {
       const response = await api.get('/events/categories');
       setCategories(response.data);
@@ -64,7 +64,7 @@ export default function CategoriesPage() {
       console.error('Erro ao buscar categorias:', err);
       setError('Não foi possível carregar as categorias.');
     } finally {
-      setLoading(false);
+      if (showGlobalLoader) setLoading(false);
     }
   };
 
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
         return;
       }
       if (activeTenant) {
-        fetchCategories();
+        fetchCategories(true);
       }
     }
   }, [activeTenant, authLoading, user, permissionsLoading, hasPermission]);

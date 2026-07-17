@@ -74,6 +74,7 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
     * **Criação e Deleção**: Apenas `ADMIN`/`OWNER` (e o Superadmin) têm as permissões `events.create` e `events.delete` para criar e deletar eventos, bem como criar/editar categorias de eventos. O papel `ORGANIZER` não possui esses privilégios.
     * **Justificativa de Edição**: Embora o papel `ORGANIZER` possa editar detalhes operacionais do evento (como horários e vagas), toda atualização de evento exige obrigatoriamente o envio de uma justificativa textual detalhada, a qual é registrada no `AuditLog`.
     * **Isolamento de Convites e Organizações**: A criação de novas organizações (`Tenant`) e o envio de novos convites de participação no sistema são restritos unicamente à função global de **Superadmin**, não sendo permitidos aos administradores comuns (`ADMIN`/`OWNER`).
+    * **Estabilidade de Interface (Memoização)**: O hook `usePermissions` expõe helpers de validação como `hasPermission` e a função de atualização `fetchPermissions` devidamente encapsulados sob `useCallback` (com dependências em `[permissions]` e `[user, tenantId]` respectivamente). Isso impede a recriação das funções a cada ciclo de renderização do React, evitando loops infinitos de re-fetch e desmontagens indevidas de modais de formulário ao digitar.
 
 ### 3.3. Ciclo de Vida do Evento e Upload (Leva 04)
 * **Status**: Transição de estados controlada (`DRAFT` ➔ `PUBLISHED` ➔ `FINISHED`/`CANCELLED`).

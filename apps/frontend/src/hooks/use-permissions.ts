@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api, getActiveTenantId } from '@/lib/api';
 import { useAuth } from '@/components/auth-provider';
 
@@ -9,7 +9,7 @@ export function usePermissions() {
   const [loading, setLoading] = useState(true);
   const tenantId = getActiveTenantId();
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     if (!user || !tenantId) {
       setRole(null);
       setPermissions([]);
@@ -28,15 +28,15 @@ export function usePermissions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, tenantId]);
 
   useEffect(() => {
     fetchPermissions();
-  }, [user, tenantId]);
+  }, [fetchPermissions]);
 
-  const hasPermission = (permission: string) => {
+  const hasPermission = useCallback((permission: string) => {
     return permissions.includes(permission);
-  };
+  }, [permissions]);
 
   return {
     role,

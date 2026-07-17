@@ -160,5 +160,11 @@ Para melhorar a experiência do usuário e evitar digitação incorreta em telas
 * **Onde encontrar:** Disponível no canto direito do campo de senha nas páginas de **Login**, **Cadastro** e **Redefinição de Senha**.
 * **Como funciona:** O ícone alterna visualmente (exibindo um olho aberto ou fechado com uma barra) e altera o tipo do campo entre texto oculto e texto visível.
 
+### 8.3. Estabilidade de Formulários e Otimizações de Carregamento
+Para evitar piscadas de tela, perda de foco ao digitar e fechamento indesejado de modais:
+* **Memoização de Permissões**: A verificação de permissões do usuário logado é feita de forma otimizada em memória. Digitar caracteres em qualquer formulário de criação/edição não aciona recriações de componentes ou novos ciclos de busca ao backend.
+* **Carregamento Otimizado de Categorias**: A tela de categorias possui carregamento síncrono inicial com indicador de processamento visual (loader). Atualizações subsequentes de criação, edição ou deleção ocorrem de forma assíncrona em segundo plano, sem travar ou piscar a interface.
+
+
 
 
