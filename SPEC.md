@@ -87,9 +87,11 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Fila de Espera Automática**:
   * Excedida a capacidade, inscrições entram com o status `WAITLIST`.
   * No cancelamento de uma vaga confirmada, o participante mais antigo na fila de espera é promovido a `CONFIRMED` e sua posição é decrementada na fila, acionando o job de e-mail automático.
-* **Criptografia de Dados (LGPD)**:
-  * Armazenamento do CPF com criptografia simétrica `AES-256-GCM` na tabela do banco de dados.
+* **Criptografia de Dados e Blind Index (LGPD)**:
+  * Armazenamento do CPF com criptografia simétrica `AES-256-GCM` na tabela do banco de dados para proteção de dados sensíveis.
   * Mascaramento padrão no formato `***.***.123-45` nos payloads normais. Exposição descriptografada restrita à permissão `registrations.view-cpf`.
+  * **Prevenção de Duplicidade (Blind Index)**: Implementação do campo `cpfHash` indexado com unicidade por evento (`@@unique([eventId, cpfHash])`). O hash é gerado utilizando HMAC-SHA256 a partir do CPF limpo (somente dígitos) usando a `ENCRYPTION_KEY`. Permite busca rápida e bloqueio de cadastros duplicados no mesmo evento sem expor ou decodificar dados sensíveis.
+  * **Validação de CPF**: Integração da validação matemática oficial do CPF (verificação de formato e cálculo dos dígitos verificadores) no fluxo de inscrição do participante, bloqueando cadastros de CPF inválido antes de salvar no banco de dados.
 
 ### 3.5. QR Code, Check-in e Scanner Offline (Leva 06)
 * **Assinatura Criptográfica**: Ingressos emitidos no formato de token JWT assinado (`QR_SECRET`) contendo identificadores essenciais.

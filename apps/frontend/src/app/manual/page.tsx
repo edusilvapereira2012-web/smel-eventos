@@ -290,6 +290,19 @@ export default function ManualPage() {
                     <li><strong>PWA + Dexie.js</strong>: Check-in offline que reduz requisições redundantes na API.</li>
                   </ul>
                 </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Shield className="h-4.5 w-4.5 text-violet-400" />
+                    7. Criptografia & Blind Index (CPF)
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Para fins de deduplicação e conformidade com a LGPD, o sistema calcula um hash de via única (HMAC-SHA256) a partir da <code>ENCRYPTION_KEY</code> para o CPF de cada inscrito, gerando a coluna <code>cpfHash</code>. 
+                  </p>
+                  <p className="text-xs text-slate-450 leading-relaxed">
+                    Em caso de migração de chaves ou cadastros antigos sem hash, o script utilitário de manutenção <code>migrate-cpf-hash.js</code> realiza a rotação de chaves e backfill de forma automatizada no banco de dados central da produção.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -363,10 +376,23 @@ export default function ManualPage() {
                   </div>
                 </div>
 
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Shield className="h-4.5 w-4.5 text-emerald-400" />
+                    5. Validação de CPF e Bloqueio de Duplicidade
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    A plataforma rejeita inscrições que utilizem CPFs matematicamente inválidos ou fictícios. Além disso, impede que o mesmo CPF seja utilizado em mais de uma inscrição para o mesmo evento (confirmada ou lista de espera), evitando duplicidades.
+                  </p>
+                  <p className="text-xs text-slate-450 leading-relaxed">
+                    O controle é efetuado de forma anônima e segura por meio de um <em>blind index</em> em conformidade com a LGPD, prevenindo que participantes usem múltiplos e-mails para conseguir várias vagas.
+                  </p>
+                </div>
+
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="h-4.5 w-4.5 text-emerald-400" />
-                    5. Especificações de Banners e Mídia
+                    6. Especificações de Banners e Mídia
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Para garantir a melhor exibição nas páginas públicas e evitar erros durante a criação ou edição de eventos, utilize banners dentro dos limites e padrões do sistema:
@@ -456,10 +482,23 @@ export default function ManualPage() {
                   </p>
                 </div>
 
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <UserCheck className="h-4.5 w-4.5 text-blue-400" />
+                    5. Unicidade de CPF por Evento
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Para preservar a integridade da listagem e a distribuição justa das vagas, o sistema bloqueia inscrições redundantes que utilizem o mesmo CPF no mesmo evento (mesmo informando e-mails diferentes).
+                  </p>
+                  <p className="text-xs text-slate-450 leading-relaxed">
+                    A validação matemática integrada no cadastro também assegura que os relatórios e a lista de credenciamento não contenham CPFs fictícios ou inválidos.
+                  </p>
+                </div>
+
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="h-4.5 w-4.5 text-blue-400" />
-                    5. Especificações de Banners e Mídia
+                    6. Especificações de Banners e Mídia
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Ao editar eventos, atente-se às regras de upload do banner para garantir o preenchimento correto e evitar erros na interface:
@@ -555,6 +594,19 @@ export default function ManualPage() {
                     O aplicativo enviará os check-ins realizados no local em lote para a API, que registrará as presenças de forma atômica no banco de dados central.
                   </p>
                 </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Shield className="h-4.5 w-4.5 text-amber-400" />
+                    5. Higienização de Dados e Segurança
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Graças à validação matemática de CPFs no cadastro e ao bloqueio de duplicidade, a lista de participantes para credenciamento está livre de CPFs falsos ou ingressos duplicados para uma mesma pessoa.
+                  </p>
+                  <p className="text-xs text-slate-450 leading-relaxed">
+                    As buscas manuais por CPF na portaria são mais rápidas e seguras, minimizando tentativas de fraude ou credenciamento impróprio.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -613,6 +665,19 @@ export default function ManualPage() {
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
                     O certificado é gerado em formato PDF de alta definição, assinado digitalmente pela instituição organizadora, e inclui um QR Code público para validação de autenticidade por terceiros.
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Shield className="h-4.5 w-4.5 text-slate-400" />
+                    5. Validação de CPF e Limite de Vagas
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Ao preencher a inscrição, seu CPF é validado matematicamente pelo sistema. Caso digite um CPF inválido, a inscrição será rejeitada com um alerta em tela.
+                  </p>
+                  <p className="text-xs text-slate-450 leading-relaxed">
+                    Cada CPF só pode ser inscrito uma vez em cada evento. Isso garante que as vagas de eventos concorridos sejam distribuídas de forma justa e honesta, impedindo que uma pessoa reserve múltiplas vagas sob o mesmo documento.
                   </p>
                 </div>
               </div>

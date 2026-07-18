@@ -41,6 +41,16 @@ pnpm --filter api exec prisma migrate dev --name <nome_da_migracao>
 pnpm --filter api exec prisma studio
 ```
 
+### 1.4. Scripts de Migração de Dados (CPF & Blind Index)
+Para backfill de registros legados de CPF e rotação de chaves de criptografia:
+```bash
+# Executar localmente
+pnpm --filter api run ts-node apps/api/src/scripts/migrate-cpf-hash.js
+
+# Executar no ambiente de produção (dentro do contêiner da API na VPS)
+sudo docker compose -f docker-compose.prod.yml exec -T api node apps/api/src/scripts/migrate-cpf-hash.js
+```
+
 ---
 
 ## 🧪 2. Protocolo de Testes e Qualidade

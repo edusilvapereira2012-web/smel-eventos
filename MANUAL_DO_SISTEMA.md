@@ -93,6 +93,11 @@ A plataforma **não possui uma área restrita (com login/senha)** voltada para o
     1.  **Autocompletar Local (LocalStorage):** Salvar os dados do último formulário preenchido localmente no navegador do participante. Assim, quando ele abrir outro formulário de evento no mesmo dispositivo, os dados serão preenchidos automaticamente.
     2.  **Cadastro do Participante (Portal do Participante):** Criar um fluxo de login simplificado (ou login único/social) para os participantes gerenciarem suas inscrições.
 
+### É possível se cadastrar mais de uma vez no mesmo evento com o mesmo CPF?
+**Não.** A plataforma realiza duas validações obrigatórias no momento do cadastro:
+1. **Validação Matemática**: O CPF digitado é validado matematicamente com base no cálculo dos dígitos verificadores oficiais. CPFs inválidos ou fictícios (como `111.111.111-11`) são rejeitados de imediato com a mensagem: *"CPF inválido. Forneça um número de CPF válido."*
+2. **Bloqueio de Duplicidade**: O sistema gera um hash criptográfico seguro (*blind index*) do CPF limpo. Se o mesmo hash for detectado em outra inscrição (ativa ou em lista de espera) para o mesmo evento, o cadastro é bloqueado com o erro: *"Este CPF já está inscrito ou na lista de espera deste evento."* Isso evita que um participante realize múltiplas inscrições usando e-mails diferentes com o mesmo CPF.
+
 ---
 
 ## 5. Gestão de Oficinas (CONLUZ e Outros Eventos)
@@ -141,11 +146,11 @@ Para que a plataforma realize o envio automático de confirmações de inscriç�
 
 O sistema conta com um **Manual Interativo** integrado diretamente na interface administrativa. A visibilidade das abas e orientações é filtrada dinamicamente de acordo com o nível de acesso do usuário logado:
 
-* **Membro**: Visualiza instruções sobre inscrições em eventos, fila de espera automática, uso de ingresso digital e download de certificados.
-* **Checker**: Acesso às orientações para operação do scanner de QR Codes na portaria, buscas manuais de inscritos por CPF/Nome, download offline de dados e sincronização pós-evento.
-* **Organizador**: Acesso aos guias para edição operacional de eventos exigindo justificativa obrigatória registrada na auditoria, além de suas restrições (ex: impossibilidade de criar ou deletar eventos/categorias).
-* **Administrador**: Manual completo de controle da organização (gestão de membros, exclusão de eventos/categorias, LGPD e monitor de e-mails).
-* **Superadmin**: Acesso irrestrito a todas as abas, somando-se as instruções de ativação/desativação de organizações, envio de convites e exclusão definitiva de usuários com deleção em cascata no banco.
+* **Membro**: Visualiza instruções sobre inscrições em eventos, fila de espera automática, uso de ingresso digital, download de certificados, bem como o funcionamento da validação obrigatória de CPF e o limite de inscrição única por evento.
+* **Checker**: Acesso às orientações para operação do scanner de QR Codes na portaria, buscas manuais de inscritos por CPF/Nome, download offline de dados, sincronização pós-evento, além de usufruir da segurança de dados limpos e higienizados na lista de presença.
+* **Organizador**: Acesso aos guias para edição operacional de eventos exigindo justificativa obrigatória registrada na auditoria, restrições do cargo e a regra de unicidade de CPF por participante em cada evento.
+* **Administrador**: Manual completo de controle da organização (gestão de membros, exclusão de eventos/categorias, LGPD, monitor de e-mails) e os controles de blindagem por *blind index* para deduplicação de CPFs em conformidade com a LGPD.
+* **Superadmin**: Acesso irrestrito a todas as abas, somando-se as instruções de ativação/desativação de organizações, envio de convites, exclusão definitiva de usuários e os mecanismos técnicos globais de criptografia e migração de hash de CPF (script de rotação).
 
 ---
 
