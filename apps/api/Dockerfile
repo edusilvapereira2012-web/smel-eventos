@@ -31,6 +31,7 @@ COPY --from=build --chown=node:node /app/apps/api/node_modules ./apps/api/node_m
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/prisma ./apps/api/prisma
+COPY --from=build --chown=node:node /app/apps/api/src/scripts ./apps/api/src/scripts
 USER node
 EXPOSE 3001
 CMD ["node", "apps/api/dist/main"]
