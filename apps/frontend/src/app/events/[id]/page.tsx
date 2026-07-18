@@ -305,7 +305,12 @@ export default function EventDetailPage() {
       loadRegistrations(true);
       loadAll();
     } catch (err: any) {
-      setTransferError(err.response?.data?.message || 'Erro ao transferir inscrição.');
+      const errorMsg = err.response?.data?.message;
+      if (Array.isArray(errorMsg)) {
+        setTransferError(errorMsg.join('. '));
+      } else {
+        setTransferError(errorMsg || 'Erro ao transferir inscrição.');
+      }
     } finally {
       setTransferSubmitting(false);
     }

@@ -210,7 +210,12 @@ export default function EventPublicLandingPage() {
       setFormData({ name: '', email: '', cpf: '', phone: '' });
       setSelectedWorkshopIds([]);
     } catch (err: any) {
-      setSubmitError(err.response?.data?.message || 'Ocorreu um erro ao realizar a inscrição.');
+      const errorMsg = err.response?.data?.message;
+      if (Array.isArray(errorMsg)) {
+        setSubmitError(errorMsg.join('. '));
+      } else {
+        setSubmitError(errorMsg || 'Ocorreu um erro ao realizar a inscrição.');
+      }
     } finally {
       setSubmitting(false);
     }
