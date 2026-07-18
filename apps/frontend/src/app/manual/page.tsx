@@ -362,6 +362,33 @@ export default function ManualPage() {
                     <p className="text-slate-350"><strong>Monitor de E-mails:</strong> Permite inspecionar logs de e-mails transacionais enviados pelo worker.</p>
                   </div>
                 </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <FileText className="h-4.5 w-4.5 text-emerald-400" />
+                    5. Especificações de Banners e Mídia
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Para garantir a melhor exibição nas páginas públicas e evitar erros durante a criação ou edição de eventos, utilize banners dentro dos limites e padrões do sistema:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-450 leading-relaxed mt-2">
+                    <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg space-y-1">
+                      <p className="text-slate-200 font-semibold">Tamanho e Formato:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li><strong>Limite Máximo:</strong> 5 MB por imagem.</li>
+                        <li><strong>Formatos Permitidos:</strong> .png, .jpg, .jpeg e .webp.</li>
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg space-y-1">
+                      <p className="text-slate-200 font-semibold">Proporções Recomendadas:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li><strong>Proporção ideal:</strong> Formato horizontal largo (Paisagem).</li>
+                        <li><strong>Proporções:</strong> 16:9 (ex: 1200x675px) ou 3:1 (ex: 1200x400px).</li>
+                        <li>Textos devem ser centralizados para evitar cortes nas bordas dependendo da tela.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -427,6 +454,33 @@ export default function ManualPage() {
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Você possui as permissões necessárias para operar o scanner de ingressos na portaria do evento, realizando check-ins rápidos por câmera ou buscas manuais por CPF/Nome.
                   </p>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <FileText className="h-4.5 w-4.5 text-blue-400" />
+                    5. Especificações de Banners e Mídia
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Ao editar eventos, atente-se às regras de upload do banner para garantir o preenchimento correto e evitar erros na interface:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-450 leading-relaxed mt-2">
+                    <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg space-y-1">
+                      <p className="text-slate-200 font-semibold">Tamanho e Formato:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li><strong>Limite Máximo:</strong> 5 MB por imagem.</li>
+                        <li><strong>Formatos Permitidos:</strong> .png, .jpg, .jpeg e .webp.</li>
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg space-y-1">
+                      <p className="text-slate-200 font-semibold">Proporções Recomendadas:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li><strong>Proporção ideal:</strong> Formato horizontal largo (Paisagem).</li>
+                        <li><strong>Proporções:</strong> 16:9 (ex: 1200x675px) ou 3:1 (ex: 1200x400px).</li>
+                        <li>Textos devem ser centralizados para evitar cortes nas bordas dependendo da tela.</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -9,6 +9,28 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 
 import { EmailService } from '../email/email.service';
 import { EventsGateway } from '../../gateways/events.gateway';
+import { QrcodeService } from '../qrcode/qrcode.service';
+
+function generateValidCpfForTest(baseNum: number): string {
+  let digits = baseNum.toString();
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (10 - i);
+  }
+  let d1 = (sum * 10) % 11;
+  if (d1 === 10 || d1 === 11) d1 = 0;
+  digits += d1.toString();
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (11 - i);
+  }
+  let d2 = (sum * 10) % 11;
+  if (d2 === 10 || d2 === 11) d2 = 0;
+  digits += d2.toString();
+  
+  return digits;
+}
 
 describe('RegistrationsService', () => {
   let service: RegistrationsService;
@@ -69,6 +91,10 @@ describe('RegistrationsService', () => {
     log: jest.fn().mockResolvedValue({}),
   };
 
+  const mockQrcodeService = {
+    getOrCreateQRCode: jest.fn().mockResolvedValue('http://localhost:9000/events/qrcodes/mock-id.png'),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -80,6 +106,7 @@ describe('RegistrationsService', () => {
         { provide: EmailService, useValue: mockEmailService },
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: QrcodeService, useValue: mockQrcodeService },
       ],
     }).compile();
 
@@ -134,7 +161,7 @@ describe('RegistrationsService', () => {
       const dto = {
         name: 'John Doe',
         email: 'john@test.com',
-        cpf: '12345678901',
+        cpf: '12345678909',
         phone: '11999999999',
       };
 
@@ -142,7 +169,7 @@ describe('RegistrationsService', () => {
 
       expect(result).toBeDefined();
       expect(result.status).toBe(RegistrationStatus.CONFIRMED);
-      expect(result.cpf).toBe('***.***.789-01');
+      expect(result.cpf).toBe('***.***.789-09');
       expect(mockPrisma.registration.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -179,7 +206,7 @@ describe('RegistrationsService', () => {
       const dto = {
         name: 'Waitlist User',
         email: 'waitlist@test.com',
-        cpf: '11122233344',
+        cpf: '11122233396',
       };
 
       const result = await service.create('event-1', dto);
@@ -258,7 +285,8 @@ describe('RegistrationsService', () => {
           name: 'Source User',
           email: 'source@test.com',
         }) // source findFirst
-        .mockResolvedValueOnce(null); // recipient existing check
+        .mockResolvedValueOnce(null) // recipient existing check (email)
+        .mockResolvedValueOnce(null); // recipient existing check (cpfHash)
       
       mockPrisma.registration.count.mockResolvedValue(1);
 
@@ -287,7 +315,7 @@ describe('RegistrationsService', () => {
       const dto = {
         name: 'Recipient User',
         email: 'recipient@test.com',
-        cpf: '98765432109',
+        cpf: '98765432100',
       };
 
       const result = await service.transfer('event-1', 'reg-source', dto, 'tenant-1');
@@ -364,7 +392,7 @@ describe('RegistrationsService', () => {
         return service.create('event-1', {
           name: `User ${index}`,
           email: `user${index}@test.com`,
-          cpf: `1234567890${index % 10}`,
+          cpf: generateValidCpfForTest(100000000 + index),
         });
       });
 

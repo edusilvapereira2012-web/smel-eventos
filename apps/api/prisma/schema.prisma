@@ -169,6 +169,7 @@ model Registration {
   name             String
   email            String
   cpf              String?            // criptografado (AES-256-GCM)
+  cpfHash          String?            // hash deterministico (Blind Index) para prevencao de duplicidade
   phone            String?
   status           RegistrationStatus @default(CONFIRMED)
   waitlistPosition Int?
@@ -186,6 +187,7 @@ model Registration {
 
   @@index([eventId, status])
   @@index([email, eventId])
+  @@index([cpfHash, eventId])
 }
 
 

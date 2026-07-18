@@ -16,6 +16,43 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+function isValidCpf(cpf: string): boolean {
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length !== 11) {
+    return false;
+  }
+
+  if (/^(\d)\1{10}$/.test(digits)) {
+    return false;
+  }
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) {
+    remainder = 0;
+  }
+  if (remainder !== parseInt(digits.charAt(9), 10)) {
+    return false;
+  }
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) {
+    remainder = 0;
+  }
+  if (remainder !== parseInt(digits.charAt(10), 10)) {
+    return false;
+  }
+
+  return true;
+}
+
 export default function EventPublicLandingPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -149,8 +186,8 @@ export default function EventPublicLandingPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.cpf.replace(/\D/g, '').length !== 11) {
-      setSubmitError('Por favor, informe um CPF válido com 11 dígitos.');
+    if (!isValidCpf(formData.cpf)) {
+      setSubmitError('Por favor, informe um CPF válido.');
       return;
     }
 

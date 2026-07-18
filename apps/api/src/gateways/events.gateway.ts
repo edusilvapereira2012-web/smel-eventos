@@ -85,21 +85,40 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client disconnected from namespace ${client.nsp.name}`);
   }
 
+  private getNamespace(tenantId: string) {
+    const nsPath = `/tenant-${tenantId}`;
+    if (!this.server) {
+      return null;
+    }
+    if (typeof this.server.of === 'function') {
+      return this.server.of(nsPath);
+    }
+    const rootServer = (this.server as any).server;
+    if (rootServer && typeof rootServer.of === 'function') {
+      return rootServer.of(nsPath);
+    }
+    return null;
+  }
+
   emitToCheckIn(tenantId: string, eventId: string, data: any) {
-    if (this.server) {
-      this.server.of(`/tenant-${tenantId}`).emit('checkin:new', data);
+    const ns = this.getNamespace(tenantId);
+    if (ns) {
+      ns.emit('checkin:new', data);
     }
   }
 
   emitToRegistrationNew(tenantId: string, data: any) {
-    if (this.server) {
-      this.server.of(`/tenant-${tenantId}`).emit('registration:new', data);
+    const ns = this.getNamespace(tenantId);
+    if (ns) {
+      ns.emit('registration:new', data);
     }
   }
 
   emitToRegistrationCancelled(tenantId: string, data: any) {
-    if (this.server) {
-      this.server.of(`/tenant-${tenantId}`).emit('registration:cancelled', data);
+    const ns = this.getNamespace(tenantId);
+    if (ns) {
+      ns.emit('registration:cancelled', data);
     }
   }
 }
+

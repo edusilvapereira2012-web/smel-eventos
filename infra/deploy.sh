@@ -49,7 +49,7 @@ ssh -t $VPS_HOST "cd $TARGET_DIR && \
         echo '📄 Criando arquivo .env padrão...' && \
         cp .env.production.example .env; \
     fi && \
-    sudo docker compose -f docker-compose.prod.yml build --no-cache api worker frontend && \
+    sudo docker compose -f docker-compose.prod.yml build --no-cache api worker frontend nginx && \
     sudo docker compose -f docker-compose.prod.yml up -d && \
     sudo docker compose -f docker-compose.prod.yml restart nginx"
 

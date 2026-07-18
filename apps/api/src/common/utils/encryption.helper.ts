@@ -65,3 +65,57 @@ export function maskCpf(cpf: string): string {
   // Example for 12345678901 -> ***.***.789-01
   return `***.***.${digits.substring(6, 9)}-${digits.substring(9, 11)}`;
 }
+
+/**
+ * Generates a deterministic, secure hash of a CPF for indexing/lookup (Blind Index).
+ */
+export function getCpfHash(cpf: string, secretKey: string): string {
+  if (!secretKey) {
+    throw new Error('Chave de criptografia não configurada.');
+  }
+  const digits = cleanCpf(cpf);
+  return crypto.createHmac('sha256', secretKey).update(digits).digest('hex');
+}
+
+/**
+ * Mathematically validates a CPF string (checking length, repeated digits, and verifier digits).
+ */
+export function isValidCpf(cpf: string): boolean {
+  const digits = cleanCpf(cpf);
+  if (digits.length !== 11) {
+    return false;
+  }
+
+  // Reject known invalid repeated digit patterns (e.g. 111.111.111-11)
+  if (/^(\d)\1{10}$/.test(digits)) {
+    return false;
+  }
+
+  // Validate 1st digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) {
+    remainder = 0;
+  }
+  if (remainder !== parseInt(digits.charAt(9), 10)) {
+    return false;
+  }
+
+  // Validate 2nd digit
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(digits.charAt(i), 10) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) {
+    remainder = 0;
+  }
+  if (remainder !== parseInt(digits.charAt(10), 10)) {
+    return false;
+  }
+
+  return true;
+}

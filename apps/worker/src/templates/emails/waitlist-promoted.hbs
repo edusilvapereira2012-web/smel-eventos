@@ -8,4 +8,11 @@
   {{code}}
 </div>
 
+{{#if qrCodeUrl}}
+<div style="text-align: center; margin: 25px 0;">
+  <img src="{{qrCodeUrl}}" alt="QR Code do Ingresso" style="width: 200px; height: 200px; border: 4px solid #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);" />
+  <p style="font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 500;">Aponte a câmera na portaria para validação</p>
+</div>
+{{/if}}
+
 <p>Estamos ansiosos pela sua presença!</p>

@@ -16,10 +16,11 @@ import {
   TransferRegistrationDto,
   ListRegistrationsQueryDto,
 } from './dto/registration.dto';
-import { encrypt, decrypt, cleanCpf, maskCpf } from '../../common/utils/encryption.helper';
+import { encrypt, decrypt, cleanCpf, maskCpf, isValidCpf, getCpfHash } from '../../common/utils/encryption.helper';
 import { EventsGateway } from '../../gateways/events.gateway';
 import { EmailService } from '../email/email.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { QrcodeService } from '../qrcode/qrcode.service';
 
 @Injectable()
 export class RegistrationsService {
@@ -32,6 +33,7 @@ export class RegistrationsService {
     private readonly emailService: EmailService,
     private readonly eventsGateway: EventsGateway,
     private readonly auditLog: AuditLogService,
+    private readonly qrcodeService: QrcodeService,
   ) {
     this.encryptionKey = this.configService.get<string>('ENCRYPTION_KEY') || 'default_secret_encryption_key_32_bytes_long';
   }
@@ -68,12 +70,13 @@ export class RegistrationsService {
    * Register a user to an event (concurrency-safe via transaction + lock)
    */
   async create(eventId: string, dto: CreateRegistrationDto, userId?: string | null, ip?: string, userAgent?: string) {
-    // 1. Clean CPF and encrypt
+    // 1. Clean, validate and encrypt CPF
     const rawCpf = cleanCpf(dto.cpf);
-    if (rawCpf.length !== 11) {
-      throw new BadRequestException('CPF inválido. Deve conter 11 dígitos.');
+    if (!isValidCpf(rawCpf)) {
+      throw new BadRequestException('CPF inválido. Forneça um número de CPF válido.');
     }
     const encryptedCpf = encrypt(rawCpf, this.encryptionKey);
+    const cpfHash = getCpfHash(rawCpf, this.encryptionKey);
 
     // 2. Perform transactional registration
     const registration = await this.prisma.$transaction(async (tx) => {
@@ -104,6 +107,19 @@ export class RegistrationsService {
 
       if (existing) {
         throw new ConflictException('Este participante já está inscrito ou na lista de espera deste evento.');
+      }
+
+      // Check if this CPF is already registered to this event with ACTIVE status
+      const existingCpf = await tx.registration.findFirst({
+        where: {
+          eventId,
+          cpfHash,
+          status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.WAITLIST] },
+        },
+      });
+
+      if (existingCpf) {
+        throw new ConflictException('Este CPF já está inscrito ou na lista de espera deste evento.');
       }
 
       // Count current confirmed registrations
@@ -144,6 +160,7 @@ export class RegistrationsService {
           name: dto.name,
           email: dto.email,
           cpf: encryptedCpf,
+          cpfHash,
           phone: dto.phone || null,
           status,
           waitlistPosition,
@@ -225,6 +242,7 @@ export class RegistrationsService {
 
     // Enqueue emails
     if (registration.status === RegistrationStatus.CONFIRMED) {
+      const qrCodeUrl = await this.qrcodeService.getOrCreateQRCode(registration.id);
       await this.emailService.enqueue({
         tenantId: registration.event.tenantId,
         to: registration.email,
@@ -233,6 +251,7 @@ export class RegistrationsService {
           name: registration.name,
           eventTitle: registration.event.title,
           code: registration.code,
+          qrCodeUrl,
         },
       });
     } else {
@@ -572,6 +591,7 @@ export class RegistrationsService {
 
     // Send promotion email
     if (result.promotedReg) {
+      const qrCodeUrl = await this.qrcodeService.getOrCreateQRCode(result.promotedReg.id);
       await this.emailService.enqueue({
         tenantId: result.tenantId,
         to: result.promotedReg.email,
@@ -580,6 +600,7 @@ export class RegistrationsService {
           name: result.promotedReg.name,
           eventTitle: result.eventTitle,
           code: result.promotedReg.code,
+          qrCodeUrl,
         },
       });
     }
@@ -651,10 +672,11 @@ export class RegistrationsService {
     }
 
     const rawCpf = cleanCpf(dto.cpf);
-    if (rawCpf.length !== 11) {
-      throw new BadRequestException('CPF inválido. Deve conter 11 dígitos.');
+    if (!isValidCpf(rawCpf)) {
+      throw new BadRequestException('CPF inválido. Forneça um número de CPF válido.');
     }
     const encryptedCpf = encrypt(rawCpf, this.encryptionKey);
+    const cpfHash = getCpfHash(rawCpf, this.encryptionKey);
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Lock event row
@@ -685,6 +707,19 @@ export class RegistrationsService {
         throw new ConflictException('O participante de destino já se encontra inscrito neste evento.');
       }
 
+      // Check if recipient's CPF is already registered to this event
+      const recipientCpfExisting = await tx.registration.findFirst({
+        where: {
+          eventId,
+          cpfHash,
+          status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.WAITLIST] },
+        },
+      });
+
+      if (recipientCpfExisting) {
+        throw new ConflictException('O participante de destino (CPF) já se encontra inscrito neste evento.');
+      }
+
       // Generate sequence code for the recipient
       const prefix = event.slug.substring(0, 3).toUpperCase().padEnd(3, 'X');
       const year = new Date().getFullYear();
@@ -700,6 +735,7 @@ export class RegistrationsService {
           name: dto.name,
           email: dto.email,
           cpf: encryptedCpf,
+          cpfHash,
           phone: dto.phone || null,
           status: RegistrationStatus.CONFIRMED,
         },
@@ -728,6 +764,7 @@ export class RegistrationsService {
     await this.invalidateSeatsCache(eventId);
 
     // Send emails
+    const qrCodeUrl = await this.qrcodeService.getOrCreateQRCode(result.finalRecipientReg.id);
     await this.emailService.enqueue({
       tenantId: event.tenantId,
       to: result.finalRecipientReg.email,
@@ -736,6 +773,7 @@ export class RegistrationsService {
         name: result.finalRecipientReg.name,
         eventTitle: result.eventTitle,
         code: result.finalRecipientReg.code,
+        qrCodeUrl,
       },
     });
 

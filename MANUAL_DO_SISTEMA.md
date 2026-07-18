@@ -165,6 +165,20 @@ Para evitar piscadas de tela, perda de foco ao digitar e fechamento indesejado d
 * **Memoização de Permissões**: A verificação de permissões do usuário logado é feita de forma otimizada em memória. Digitar caracteres em qualquer formulário de criação/edição não aciona recriações de componentes ou novos ciclos de busca ao backend.
 * **Carregamento Otimizado de Categorias**: A tela de categorias possui carregamento síncrono inicial com indicador de processamento visual (loader). Atualizações subsequentes de criação, edição ou deleção ocorrem de forma assíncrona em segundo plano, sem travar ou piscar a interface.
 
+---
+
+## 9. Especificações de Mídia (Banners de Eventos)
+
+Para garantir a melhor exibição e evitar erros de carregamento ao criar ou editar eventos:
+
+* **Tamanho Limite**: O arquivo de imagem do banner deve possuir no máximo **5 MB**.
+* **Formatos Aceitos**: `.png`, `.jpg`, `.jpeg` e `.webp`.
+* **Proporções e Dimensões Recomendadas**:
+  * Como a imagem é adaptada e cortada para preencher retângulos horizontais nas listagens e na página do evento (usando a propriedade CSS `object-cover`), utilize imagens em formato **paisagem (horizontal)**.
+  * **Proporção recomendada**: **16:9** (Exemplo: `1200x675 px`) ou proporções mais largas como **3:1** (Exemplo: `1200x400 px`).
+  * **Dica de Layout**: Mantenha os textos e elementos visuais importantes centralizados na imagem. Evite colocá-los muito próximos das bordas superiores ou inferiores, pois eles podem sofrer pequenos cortes dependendo do tamanho da tela do dispositivo do participante (computador ou celular).
+
+
 
 
 
