@@ -5,26 +5,33 @@ const prisma = new PrismaClient();
 
 const ALGORITHM = 'aes-256-gcm';
 
+function getProductionKeyStr(rawSecretKey) {
+  let productionKeyStr = (rawSecretKey || '').trim();
+  if ((productionKeyStr.startsWith('"') && productionKeyStr.endsWith('"')) || 
+      (productionKeyStr.startsWith("'") && productionKeyStr.endsWith("'"))) {
+    productionKeyStr = productionKeyStr.slice(1, -1);
+  }
+  if (!productionKeyStr) {
+    productionKeyStr = 'super_secret_encryption_key_32_bytes_long_12345678';
+  }
+  return productionKeyStr;
+}
+
 function tryDecrypt(text, rawSecretKey) {
-  if (!text) return '';
+  if (!text) return null;
   
-  // Define key variations to try (raw, trimmed, quote-stripped)
+  const productionKeyStr = getProductionKeyStr(rawSecretKey);
+  
+  // Define key variations to try
   const keysToTry = [
-    rawSecretKey,
-    rawSecretKey.trim(),
+    productionKeyStr,
+    'super_secret_encryption_key_32_bytes_long_12345678',
+    'default_secret_encryption_key_32_bytes_long'
   ];
-  
-  const trimmed = rawSecretKey.trim();
-  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    keysToTry.push(trimmed.slice(1, -1));
-  }
-  if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
-    keysToTry.push(trimmed.slice(1, -1));
-  }
 
   const parts = text.split(':');
   if (parts.length !== 3) {
-    return text; // Not encrypted
+    return null;
   }
   
   const iv = Buffer.from(parts[0], 'hex');
@@ -39,14 +46,23 @@ function tryDecrypt(text, rawSecretKey) {
       let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
       
-      // If decryption succeeded, return it and log the working key length
       return { decrypted, workingKey: keyStr };
     } catch (error) {
-      // Try next key variation
+      // Try next key
     }
   }
   
   return null;
+}
+
+function encrypt(text, secretKeyStr) {
+  const key = crypto.createHash('sha256').update(secretKeyStr).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${encrypted}:${tag}`;
 }
 
 function getCpfHash(cpf, secretKey) {
@@ -56,7 +72,9 @@ function getCpfHash(cpf, secretKey) {
 
 async function main() {
   const rawSecretKey = process.env.ENCRYPTION_KEY || 'default_secret_encryption_key_32_bytes_long';
+  const productionKeyStr = getProductionKeyStr(rawSecretKey);
   console.log('Chave de criptografia bruta carregada. Comprimento:', rawSecretKey.length);
+  console.log('Chave de produção derivada. Comprimento:', productionKeyStr.length);
 
   const registrations = await prisma.registration.findMany({
     where: {
@@ -77,10 +95,18 @@ async function main() {
     }
     
     const { decrypted, workingKey } = decryptResult;
-    const hash = getCpfHash(decrypted, workingKey);
+    const hash = getCpfHash(decrypted, productionKeyStr);
+    
+    const updateData = { cpfHash: hash };
+    
+    if (workingKey !== productionKeyStr) {
+      console.log(`Rotacionando chave: Re-criptografando CPF para ID ${reg.id} usando a chave de produção...`);
+      updateData.cpf = encrypt(decrypted, productionKeyStr);
+    }
+    
     await prisma.registration.update({
       where: { id: reg.id },
-      data: { cpfHash: hash },
+      data: updateData,
     });
     updatedCount++;
   }
