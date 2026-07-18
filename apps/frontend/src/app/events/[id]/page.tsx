@@ -290,7 +290,7 @@ export default function EventDetailPage() {
       setTransferSubmitting(true);
       setTransferError(null);
       await api.post(`/events/${eventId}/registrations/${transferTargetId}/transfer`, {
-        name: transferData.name,
+        name: transferData.name.trim().toUpperCase(),
         email: transferData.email,
         cpf: transferData.cpf.replace(/\D/g, ''),
         phone: transferData.phone ? transferData.phone.replace(/\D/g, '') : undefined,
@@ -2408,8 +2408,8 @@ export default function EventDetailPage() {
                   type="text"
                   required
                   value={transferData.name}
-                  onChange={(e) => setTransferData((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/50"
+                  onChange={(e) => setTransferData((prev) => ({ ...prev, name: e.target.value.toUpperCase() }))}
+                  className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/50 uppercase"
                   placeholder="Nome do novo participante"
                 />
               </div>

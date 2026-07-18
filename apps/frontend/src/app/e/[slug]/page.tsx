@@ -195,7 +195,7 @@ export default function EventPublicLandingPage() {
       setSubmitting(true);
       setSubmitError(null);
       const response = await api.post(`/public/events/${slug}/register`, {
-        name: formData.name,
+        name: formData.name.trim().toUpperCase(),
         email: formData.email,
         cpf: formData.cpf.replace(/\D/g, ''),
         phone: formData.phone ? formData.phone.replace(/\D/g, '') : undefined,
@@ -609,8 +609,8 @@ export default function EventPublicLandingPage() {
                   required
                   placeholder="Seu nome completo"
                   value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value.toUpperCase() }))}
+                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 transition-colors uppercase"
                 />
               </div>
 

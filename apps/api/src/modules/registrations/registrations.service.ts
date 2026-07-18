@@ -157,7 +157,7 @@ export class RegistrationsService {
           code,
           eventId,
           userId: userId || null,
-          name: dto.name,
+          name: dto.name.trim().toUpperCase(),
           email: dto.email,
           cpf: encryptedCpf,
           cpfHash,
@@ -732,7 +732,7 @@ export class RegistrationsService {
         data: {
           code,
           eventId,
-          name: dto.name,
+          name: dto.name.trim().toUpperCase(),
           email: dto.email,
           cpf: encryptedCpf,
           cpfHash,
