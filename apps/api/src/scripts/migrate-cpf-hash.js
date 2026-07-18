@@ -15,7 +15,11 @@ function decrypt(text, secretKey) {
     const iv = Buffer.from(parts[0], 'hex');
     const encryptedText = Buffer.from(parts[1], 'hex');
     const authTag = Buffer.from(parts[2], 'hex');
-    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(secretKey, 'hex'), iv);
+    
+    // Derive the 32-byte key from the secretKey
+    const key = crypto.createHash('sha256').update(secretKey).digest();
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
