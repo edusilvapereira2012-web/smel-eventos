@@ -405,28 +405,51 @@ export default function EventPublicLandingPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-3.5 p-4 rounded-2xl bg-slate-900/20 border border-slate-900/60">
-                  {event.isOnline ? (
-                    <>
-                      <Globe className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-extrabold text-white text-xs uppercase tracking-wider">Formato</h4>
-                        <p className="text-slate-400 text-xs mt-1">100% Online e Interativo</p>
-                        {event.onlineUrl && (
-                          <p className="text-violet-400 text-xs font-semibold mt-1 truncate max-w-xs">{event.onlineUrl}</p>
+                {event.isOnline ? (
+                  <div className="flex items-start space-x-3.5 p-4 rounded-2xl bg-slate-900/20 border border-slate-900/60">
+                    <Globe className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-extrabold text-white text-xs uppercase tracking-wider">Formato</h4>
+                      <p className="text-slate-400 text-xs mt-1">100% Online e Interativo</p>
+                      {event.onlineUrl && (
+                        <a
+                          href={event.onlineUrl.startsWith('http') ? event.onlineUrl : `https://${event.onlineUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-violet-400 hover:text-violet-300 hover:underline text-xs font-semibold mt-1 block truncate max-w-xs"
+                        >
+                          {event.onlineUrl}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <a
+                    href={event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '#'}
+                    target={event.location ? '_blank' : undefined}
+                    rel={event.location ? 'noopener noreferrer' : undefined}
+                    className={`flex items-start space-x-3.5 p-4 rounded-2xl bg-slate-900/20 border transition-all ${
+                      event.location 
+                        ? 'border-slate-900/60 hover:border-violet-500/30 hover:bg-slate-900/40 cursor-pointer group' 
+                        : 'border-slate-900/60'
+                    }`}
+                  >
+                    <MapPin className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                    <div>
+                      <h4 className="font-extrabold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        Localização
+                        {event.location && (
+                          <span className="text-[9px] text-violet-400/80 font-normal normal-case group-hover:underline">
+                            (Ver no mapa)
+                          </span>
                         )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-extrabold text-white text-xs uppercase tracking-wider">Localização</h4>
-                        <p className="text-slate-400 text-xs mt-1">{event.location || 'Local a ser confirmado'}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
+                      </h4>
+                      <p className="text-slate-400 text-xs mt-1 group-hover:text-slate-300 transition-colors">
+                        {event.location || 'Local a ser confirmado'}
+                      </p>
+                    </div>
+                  </a>
+                )}
               </div>
 
               {/* Registration CTA */}
