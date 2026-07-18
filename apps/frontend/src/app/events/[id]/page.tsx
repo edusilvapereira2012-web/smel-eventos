@@ -286,6 +286,10 @@ export default function EventDetailPage() {
       setTransferError('Por favor, informe um CPF válido.');
       return;
     }
+    if (!transferData.phone || transferData.phone.replace(/\D/g, '').length < 10) {
+      setTransferError('Por favor, informe um número de telefone/celular válido com DDD.');
+      return;
+    }
     try {
       setTransferSubmitting(true);
       setTransferError(null);
@@ -293,7 +297,7 @@ export default function EventDetailPage() {
         name: transferData.name.trim().toUpperCase(),
         email: transferData.email,
         cpf: transferData.cpf.replace(/\D/g, ''),
-        phone: transferData.phone ? transferData.phone.replace(/\D/g, '') : undefined,
+        phone: transferData.phone.replace(/\D/g, ''),
       });
       setTransferModalOpen(false);
       setTransferData({ name: '', email: '', cpf: '', phone: '' });
@@ -2440,9 +2444,10 @@ export default function EventDetailPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Telefone (Opcional)</label>
+                  <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Telefone</label>
                   <input
                     type="text"
+                    required
                     value={transferData.phone}
                     onChange={handleTransferPhoneChange}
                     className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/50"

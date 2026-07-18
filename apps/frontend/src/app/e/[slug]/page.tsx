@@ -191,6 +191,11 @@ export default function EventPublicLandingPage() {
       return;
     }
 
+    if (!formData.phone || formData.phone.replace(/\D/g, '').length < 10) {
+      setSubmitError('Por favor, informe um número de celular válido com DDD.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setSubmitError(null);
@@ -198,7 +203,7 @@ export default function EventPublicLandingPage() {
         name: formData.name.trim().toUpperCase(),
         email: formData.email,
         cpf: formData.cpf.replace(/\D/g, ''),
-        phone: formData.phone ? formData.phone.replace(/\D/g, '') : undefined,
+        phone: formData.phone.replace(/\D/g, ''),
         workshopIds: selectedWorkshopIds,
       });
       setSuccessData(response.data);
@@ -643,6 +648,7 @@ export default function EventPublicLandingPage() {
                   <label className="text-2xs font-extrabold text-slate-400 uppercase tracking-wider block">Celular</label>
                   <input
                     type="text"
+                    required
                     placeholder="(00) 00000-0000"
                     value={formData.phone}
                     onChange={handlePhoneChange}

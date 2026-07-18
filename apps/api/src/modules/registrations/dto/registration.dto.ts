@@ -15,9 +15,9 @@ export class CreateRegistrationDto {
   @IsString()
   cpf!: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'O celular é obrigatório.' })
   @IsString()
-  phone?: string;
+  phone!: string;
 
   @IsOptional()
   @IsString({ each: true })
@@ -37,9 +37,9 @@ export class TransferRegistrationDto {
   @IsString()
   cpf!: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'O celular do destinatário é obrigatório.' })
   @IsString()
-  phone?: string;
+  phone!: string;
 }
 
 export class ListRegistrationsQueryDto {
