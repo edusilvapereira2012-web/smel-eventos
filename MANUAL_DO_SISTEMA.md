@@ -183,6 +183,32 @@ Para garantir a melhor exibição e evitar erros de carregamento ao criar ou edi
   * **Proporção recomendada**: **16:9** (Exemplo: `1200x675 px`) ou proporções mais largas como **3:1** (Exemplo: `1200x400 px`).
   * **Dica de Layout**: Mantenha os textos e elementos visuais importantes centralizados na imagem. Evite colocá-los muito próximos das bordas superiores ou inferiores, pois eles podem sofrer pequenos cortes dependendo do tamanho da tela do dispositivo do participante (computador ou celular).
 
+---
+
+## 10. Padronização de Cadastro e Campos Obrigatórios
+
+Para manter a base de dados consistente, livre de erros cadastrais e otimizada para listagens de presença:
+
+### 10.1. Nome em Caixa Alta (UPPERCASE)
+* Toda inscrição ou transferência de inscrição registrada na plataforma é salva com o nome do participante em letras **maiúsculas**.
+* **Frontend**: Os inputs de nome convertem automaticamente o texto digitado à medida que o usuário escreve. Ao submeter, o payload é higienizado em caixa alta.
+* **Backend**: Caso a API receba uma chamada externa, existe um interceptador/validador de integridade que força a conversão do nome para maiúsculo antes da escrita no banco de dados.
+
+### 10.2. Obrigatoriedade de Campos
+Todos os campos cadastrais do formulário de inscrição são obrigatórios:
+* **Nome Completo**
+* **E-mail** (formato válido de correio eletrônico)
+* **CPF** (validação matemática dos dígitos verificadores)
+* **Celular/Telefone**: O campo passou a ser obrigatório em todas as instâncias (inscrição inicial e transferência). O número deve conter o DDD e pelo menos 10 dígitos numéricos válidos.
+
+---
+
+## 11. Localização Geográfica dos Eventos (Mapas)
+
+Os eventos contam com a integração de localização geográfica para facilitar o trajeto do participante:
+* **Administração**: Ao criar ou editar um evento, o organizador pode especificar o endereço textual completo e inserir o link direto de mapas (Google Maps, Waze ou similar).
+* **Página do Evento (Participante)**: A página do evento exibe um card interativo com o endereço configurado. O participante pode clicar no botão de mapa para abrir diretamente a navegação GPS em seu celular ou computador.
+
 
 
 

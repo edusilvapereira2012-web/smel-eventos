@@ -122,6 +122,15 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Detecção de Conflitos de Horário**: Validação automática e em tempo real que impede que um mesmo participante se inscreva em oficinas cujos horários se sobreponham (mesmo dia e horário de realização).
 * **Ativação Dinâmica**: Arquitetura desacoplada e agnóstica; a funcionalidade de oficinas e palestrantes é ativada de forma transparente para qualquer evento cujo limite máximo de oficinas por participante (`maxWorkshops`) seja configurado com valor maior que zero.
 
+### 3.10. Padronização de Nomes e Campos Obrigatórios (Leva 13)
+* **Padronização em UPPERCASE**: Conversão automática de nomes dos participantes para letras maiúsculas tanto no frontend (ao digitar e na submissão) quanto no backend (como regra de integridade final na API antes de persistir no banco de dados).
+* **Campos Obrigatórios Rigorosos**: O campo `phone` (Celular/Telefone) passou de opcional para estritamente obrigatório em todas as camadas da aplicação (DTOs de inscrição e transferência com `@IsNotEmpty()`, atributos HTML5 `required` no frontend e validações programáticas).
+* **Tratamento Dinâmico de Erros**: O frontend foi aprimorado para capturar arrays de mensagens de validação retornados pela API e mesclá-los utilizando a formatação `. ` para exibição clara de múltiplos erros.
+
+### 3.11. Localização Geográfica dos Eventos (Leva 13)
+* **Geolocalização**: Suporte para cadastro e exibição do endereço físico e do link de mapas do evento.
+* **Experiência do Participante**: Exibição de card visual dedicado na landing page do evento que direciona os participantes diretamente para serviços de rota (ex: Google Maps, Waze) através de um link persistente acionado por botão de navegação.
+
 ---
 
 ## 4. Auditoria, LGPD e Otimizações de Produção (Leva 10)
