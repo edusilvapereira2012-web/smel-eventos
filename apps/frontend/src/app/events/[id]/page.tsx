@@ -20,6 +20,8 @@ import {
   Edit2,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   AlertTriangle,
   CheckCircle2,
@@ -28,6 +30,7 @@ import {
   Search,
   RefreshCw,
   FileSpreadsheet,
+  FileText,
   X,
   AlertCircle,
   QrCode,
@@ -35,6 +38,7 @@ import {
   Info,
   Upload,
   Users,
+  Settings,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -125,6 +129,22 @@ export default function EventDetailPage() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'standard' | 'custom'>('standard');
+  const [presentRegistrations, setPresentRegistrations] = useState<any[]>([]);
+  const [presentLoading, setPresentLoading] = useState(false);
+  const [individualGenerating, setIndividualGenerating] = useState<Record<string, boolean>>({});
+  
+  // States for dynamic certificates
+  const [selectedCertificateType, setSelectedCertificateType] = useState<'EVENT' | 'WORKSHOP' | 'CUSTOM'>('EVENT');
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>('');
+  const [selectedCustomTitle, setSelectedCustomTitle] = useState<string>('');
+  const [customHours, setCustomHours] = useState<number | ''>('');
+
+  // States for Batch Generation & Pagination of Checked-in Registrations
+  const [selectedRegIds, setSelectedRegIds] = useState<string[]>([]);
+  const [presentPageIndex, setPresentPageIndex] = useState(0);
+  const [presentNextCursor, setPresentNextCursor] = useState<string | null>(null);
+  const [presentCursors, setPresentCursors] = useState<(string | null)[]>([null]);
+  const presentPageLimit = 10;
 
   // --- INLINE FORM MODAL STATES ---
   const [modalOpen, setModalOpen] = useState<'speaker' | 'sponsor' | 'schedule' | 'workshop' | null>(null);
@@ -166,6 +186,7 @@ export default function EventDetailPage() {
   const [regStatus, setRegStatus] = useState<string>('');
   const [regLoading, setRegLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [presenceListLoading, setPresenceListLoading] = useState(false);
 
   // --- WORKSHOP ENROLLMENTS MODAL STATE ---
   const [enrollmentsModalOpen, setEnrollmentsModalOpen] = useState(false);
@@ -277,6 +298,23 @@ export default function EventDetailPage() {
       setError(err.response?.data?.message || 'Falha ao exportar inscrições. Verifique suas permissões.');
     } finally {
       setExportLoading(false);
+    }
+  };
+
+  const handlePresenceListPdf = async () => {
+    try {
+      setPresenceListLoading(true);
+      setError(null);
+      const res = await api.get(`/reports/events/${eventId}/presence-list`, {
+        responseType: 'blob',
+      });
+      const file = new Blob([res.data], { type: 'application/pdf' });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, '_blank');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Falha ao gerar lista de presença PDF.');
+    } finally {
+      setPresenceListLoading(false);
     }
   };
 
@@ -469,9 +507,74 @@ export default function EventDetailPage() {
     }
   };
 
+  const loadPresentRegistrations = async (
+    pageIdx = 0,
+    cursorVal: string | null = null,
+    certType = selectedCertificateType,
+    wId = selectedWorkshopId,
+    cTitle = selectedCustomTitle,
+  ) => {
+    if (!eventId) return;
+    setPresentLoading(true);
+    try {
+      const res = await api.get(`/events/${eventId}/registrations`, {
+        params: {
+          status: 'CONFIRMED',
+          checkedIn: 'true',
+          limit: presentPageLimit,
+          cursor: cursorVal || undefined,
+          certificateType: certType,
+          workshopId: certType === 'WORKSHOP' ? wId || undefined : undefined,
+          customTitle: certType === 'CUSTOM' ? cTitle || undefined : undefined,
+        },
+      });
+      setPresentRegistrations(res.data.data || []);
+      setPresentNextCursor(res.data.nextCursor || null);
+      setPresentPageIndex(pageIdx);
+      
+      if (pageIdx === 0) {
+        setPresentCursors([null, res.data.nextCursor || null]);
+      } else if (res.data.nextCursor) {
+        setPresentCursors(prev => {
+          const nextCursors = [...prev];
+          nextCursors[pageIdx + 1] = res.data.nextCursor;
+          return nextCursors;
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Falha ao carregar participantes presentes.');
+    } finally {
+      setPresentLoading(false);
+    }
+  };
+
+  const handleGenerateIndividual = async (registrationId: string) => {
+    setIndividualGenerating(prev => ({ ...prev, [registrationId]: true }));
+    setError(null);
+    setSuccess(null);
+    try {
+      await api.post(`/registrations/${registrationId}/certificate/generate`, {
+        type: selectedCertificateType,
+        workshopId: selectedCertificateType === 'WORKSHOP' ? selectedWorkshopId || undefined : undefined,
+        customTitle: selectedCertificateType === 'CUSTOM' ? selectedCustomTitle || undefined : undefined,
+        hours: selectedCertificateType === 'CUSTOM' && customHours !== '' ? Number(customHours) : undefined,
+      });
+      setSuccess('Emissão de certificado individual iniciada com sucesso! O processamento ocorre em fila.');
+      setTimeout(() => {
+        loadPresentRegistrations(presentPageIndex, presentCursors[presentPageIndex], selectedCertificateType, selectedWorkshopId, selectedCustomTitle);
+      }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Falha ao emitir certificado individual.');
+    } finally {
+      setIndividualGenerating(prev => ({ ...prev, [registrationId]: false }));
+    }
+  };
+
   useEffect(() => {
     if (activeTenant && activeTab === 'certificates') {
       loadCertificatesConfig();
+      loadPresentRegistrations(0, null, selectedCertificateType, selectedWorkshopId, selectedCustomTitle);
     }
   }, [activeTenant, activeTab, event]);
 
@@ -539,12 +642,23 @@ export default function EventDetailPage() {
   };
 
   const handleGenerateBatch = async () => {
+    if (selectedRegIds.length === 0) return;
     setBatchGenerating(true);
     setError(null);
     setSuccess(null);
     try {
-      const res = await api.post(`/events/${eventId}/certificates/generate`);
+      const res = await api.post(`/events/${eventId}/certificates/generate`, {
+        registrationIds: selectedRegIds,
+        type: selectedCertificateType,
+        workshopId: selectedCertificateType === 'WORKSHOP' ? selectedWorkshopId || undefined : undefined,
+        customTitle: selectedCertificateType === 'CUSTOM' ? selectedCustomTitle || undefined : undefined,
+        hours: selectedCertificateType === 'CUSTOM' && customHours !== '' ? Number(customHours) : undefined,
+      });
       setSuccess(`Lote de emissão disparado com sucesso! ${res.data.count} certificados estão sendo gerados em fila.`);
+      setSelectedRegIds([]);
+      setTimeout(() => {
+        loadPresentRegistrations(presentPageIndex, presentCursors[presentPageIndex], selectedCertificateType, selectedWorkshopId, selectedCustomTitle);
+      }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Falha ao iniciar geração de certificados.');
     } finally {
@@ -1652,6 +1766,14 @@ export default function EventDetailPage() {
                   {exportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
                   <span>Exportar CSV</span>
                 </Button>
+                <Button
+                  onClick={handlePresenceListPdf}
+                  disabled={presenceListLoading}
+                  className="bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs py-2 px-4 rounded-lg flex items-center space-x-2"
+                >
+                  {presenceListLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                  <span>Lista de Presença (PDF)</span>
+                </Button>
               </div>
             </div>
 
@@ -1898,18 +2020,115 @@ export default function EventDetailPage() {
                   Dispare a emissão de certificados oficiais para os participantes do evento que efetuaram check-in com sucesso. Certificados gerados são enviados por e-mail e ficam disponíveis para validação pública.
                 </p>
               </div>
-              <Button
-                onClick={handleGenerateBatch}
-                disabled={batchGenerating}
-                className="bg-violet-600 hover:bg-violet-750 disabled:bg-violet-850 text-white font-bold text-xs py-3 px-6 rounded-xl flex items-center space-x-2 shadow-lg shadow-violet-950/35 relative z-10 w-full lg:w-auto justify-center"
-              >
-                {batchGenerating ? (
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                ) : (
-                  <Award className="h-4.5 w-4.5" />
+              <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10 w-full lg:w-auto">
+                {selectedRegIds.length > 0 && (
+                  <button
+                    onClick={() => setSelectedRegIds([])}
+                    className="text-xs text-slate-400 hover:text-white transition font-bold px-3 py-2 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-950/50"
+                  >
+                    Limpar Seleção
+                  </button>
                 )}
-                <span>Emitir Certificados em Lote</span>
-              </Button>
+                <Button
+                  onClick={handleGenerateBatch}
+                  disabled={batchGenerating || selectedRegIds.length === 0}
+                  className="bg-violet-600 hover:bg-violet-750 disabled:bg-violet-850 text-white font-bold text-xs py-3 px-6 rounded-xl flex items-center space-x-2 shadow-lg shadow-violet-950/35 w-full sm:w-auto justify-center"
+                  title={selectedRegIds.length === 0 ? "Selecione participantes na lista abaixo para emitir em lote" : ""}
+                >
+                  {batchGenerating ? (
+                    <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                  ) : (
+                    <Award className="h-4.5 w-4.5" />
+                  )}
+                  <span>Emitir em Lote ({selectedRegIds.length})</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Filtros e Tipo de Emissão */}
+            <div className="bg-slate-900/10 border border-slate-900/80 p-6 rounded-2xl shadow-lg space-y-6">
+              <h3 className="text-sm font-extrabold text-white flex items-center gap-2 border-b border-slate-900 pb-3">
+                <Settings className="h-4.5 w-4.5 text-violet-400" />
+                Configurar Atividade da Emissão
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Tipo de Certificado</label>
+                  <select
+                    value={selectedCertificateType}
+                    onChange={(e) => {
+                      const newType = e.target.value as any;
+                      setSelectedCertificateType(newType);
+                      setSelectedWorkshopId('');
+                      setSelectedCustomTitle('');
+                      setCustomHours('');
+                      setSelectedRegIds([]);
+                      setPresentPageIndex(0);
+                      loadPresentRegistrations(0, null, newType, '', '');
+                    }}
+                    className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50 cursor-pointer"
+                  >
+                    <option value="EVENT">Participação no Evento Principal</option>
+                    <option value="WORKSHOP">Oficinas (Atividades Acadêmicas/Técnicas)</option>
+                    <option value="CUSTOM">Atividade Personalizada (Mesa Redonda, Abertura, etc.)</option>
+                  </select>
+                </div>
+
+                {selectedCertificateType === 'WORKSHOP' && (
+                  <div className="space-y-1.5">
+                    <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Selecione a Oficina</label>
+                    <select
+                      value={selectedWorkshopId}
+                      onChange={(e) => {
+                        const newWId = e.target.value;
+                        setSelectedWorkshopId(newWId);
+                        setSelectedRegIds([]);
+                        setPresentPageIndex(0);
+                        loadPresentRegistrations(0, null, 'WORKSHOP', newWId, '');
+                      }}
+                      className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50 cursor-pointer"
+                    >
+                      <option value="">Selecione uma oficina...</option>
+                      {workshops.map((ws) => (
+                        <option key={ws.id} value={ws.id}>
+                          {ws.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedCertificateType === 'CUSTOM' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Título da Atividade</label>
+                      <input
+                        type="text"
+                        value={selectedCustomTitle}
+                        onChange={(e) => setSelectedCustomTitle(e.target.value)}
+                        onBlur={() => {
+                          setSelectedRegIds([]);
+                          setPresentPageIndex(0);
+                          loadPresentRegistrations(0, null, 'CUSTOM', '', selectedCustomTitle);
+                        }}
+                        placeholder="Ex: Cerimônia de Abertura / Mesa Redonda"
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Carga Horária (Opcional)</label>
+                      <input
+                        type="number"
+                        value={customHours}
+                        onChange={(e) => setCustomHours(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder={`Padrão: ${certHours}h`}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Seletor de Modo de Layout */}
@@ -2102,6 +2321,191 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                 </>
+              )}
+            </div>
+
+            {/* Lista de Participantes e Emissão Individual */}
+            <div className="bg-slate-900/10 border border-slate-900/80 p-6 rounded-2xl shadow-lg space-y-6">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-900">
+                <div className="space-y-1">
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                    <Users className="h-4.5 w-4.5 text-violet-400" />
+                    Participantes com Presença Registrada
+                    <span className="text-2xs bg-violet-600/20 text-violet-400 px-2 py-0.5 rounded-full font-bold">
+                      {presentRegistrations.length}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-450">
+                    Lista de participantes confirmados que já efetuaram check-in e estão elegíveis para recebimento de certificado.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedRegIds([]);
+                    setPresentPageIndex(0);
+                    loadPresentRegistrations(0, null, selectedCertificateType, selectedWorkshopId, selectedCustomTitle);
+                  }}
+                  disabled={presentLoading}
+                  className="bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-white border border-slate-850 p-2 rounded-xl transition"
+                  title="Atualizar lista"
+                >
+                  <RefreshCw className={`h-4 w-4 ${presentLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {presentLoading && presentRegistrations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+                  <span className="text-xs text-slate-500">Carregando lista de participantes presentes...</span>
+                </div>
+              ) : presentRegistrations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 border border-dashed border-slate-850 rounded-xl">
+                  <span className="text-slate-500 text-xs">Nenhum participante com check-in registrado para este evento.</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-900 text-slate-400 font-extrabold uppercase tracking-wider text-[10px]">
+                          <th className="py-3 px-4 w-12 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                presentRegistrations.filter(r => !r.certificate).length > 0 &&
+                                presentRegistrations.filter(r => !r.certificate).every(r => selectedRegIds.includes(r.id))
+                              }
+                              onChange={(e) => {
+                                const eligible = presentRegistrations.filter(r => !r.certificate).map(r => r.id);
+                                if (e.target.checked) {
+                                  setSelectedRegIds(prev => Array.from(new Set([...prev, ...eligible])));
+                                } else {
+                                  setSelectedRegIds(prev => prev.filter(id => !eligible.includes(id)));
+                                }
+                              }}
+                              className="rounded border-slate-700 bg-slate-950 text-violet-600 focus:ring-violet-500 focus:ring-offset-slate-900 h-4 w-4 cursor-pointer"
+                            />
+                          </th>
+                          <th className="py-3 px-4">Participante / E-mail</th>
+                          <th className="py-3 px-4">Data do Check-in</th>
+                          <th className="py-3 px-4">Status do Certificado</th>
+                          <th className="py-3 px-4 text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-900/40">
+                        {presentRegistrations.map((reg) => {
+                          const checkInDate = reg.checkedInAt ? new Date(reg.checkedInAt) : null;
+                          const formattedCheckIn = checkInDate
+                            ? checkInDate.toLocaleDateString('pt-BR') + ' ' + checkInDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                            : '—';
+                          const isGenerating = !!individualGenerating[reg.id];
+
+                          return (
+                            <tr key={reg.id} className="hover:bg-slate-900/5 transition">
+                              <td className="py-3.5 px-4 w-12 text-center">
+                                {!reg.certificate ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedRegIds.includes(reg.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedRegIds(prev => [...prev, reg.id]);
+                                      } else {
+                                        setSelectedRegIds(prev => prev.filter(id => id !== reg.id));
+                                      }
+                                    }}
+                                    className="rounded border-slate-700 bg-slate-950 text-violet-600 focus:ring-violet-500 focus:ring-offset-slate-900 h-4 w-4 cursor-pointer"
+                                  />
+                                ) : (
+                                  <input
+                                    type="checkbox"
+                                    disabled
+                                    checked={true}
+                                    className="rounded border-slate-800 bg-slate-900/50 text-slate-700 h-4 w-4 opacity-50 cursor-not-allowed"
+                                  />
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 font-medium text-slate-200">
+                                <span className="font-bold text-white block">{reg.name}</span>
+                                <span className="text-slate-500 text-2xs block">{reg.email}</span>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-350 font-mono text-2xs">
+                                {formattedCheckIn}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {reg.certificate ? (
+                                  <div className="flex items-center space-x-1.5">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600/10 text-emerald-400 border border-emerald-500/20">
+                                      Emitido
+                                    </span>
+                                    <span className="text-3xs text-slate-500 font-mono">
+                                      ({reg.certificate.code})
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-800 text-slate-400 border border-slate-700/30">
+                                    Pendente
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                {reg.certificate ? (
+                                  <a
+                                    href={`${api.defaults.baseURL}/certificates/${reg.certificate.code}/download`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center space-x-1 bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-880 hover:border-slate-700 font-bold text-3xs py-1.5 px-3 rounded-lg transition"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    <span>Download PDF</span>
+                                  </a>
+                                ) : (
+                                  <Button
+                                    onClick={() => handleGenerateIndividual(reg.id)}
+                                    disabled={isGenerating || batchGenerating}
+                                    className="bg-violet-600 hover:bg-violet-750 disabled:bg-violet-850 text-white font-bold text-3xs py-1.5 px-3 rounded-lg inline-flex items-center space-x-1 shadow transition"
+                                  >
+                                    {isGenerating ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Award className="h-3 w-3" />
+                                    )}
+                                    <span>Emitir Certificado</span>
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Paginação */}
+                  <div className="flex items-center justify-between border-t border-slate-900/40 pt-4 text-xs text-slate-450">
+                    <div>
+                      Página <span className="font-bold text-white">{presentPageIndex + 1}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => loadPresentRegistrations(presentPageIndex - 1, presentCursors[presentPageIndex - 1], selectedCertificateType, selectedWorkshopId, selectedCustomTitle)}
+                        disabled={presentPageIndex === 0 || presentLoading}
+                        className="bg-slate-900 hover:bg-slate-850 disabled:bg-slate-950 text-slate-350 hover:text-white border border-slate-850 disabled:border-slate-900 font-bold text-2xs py-1.5 px-3 rounded-lg transition inline-flex items-center space-x-1"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                        <span>Anterior</span>
+                      </Button>
+                      <Button
+                        onClick={() => loadPresentRegistrations(presentPageIndex + 1, presentNextCursor, selectedCertificateType, selectedWorkshopId, selectedCustomTitle)}
+                        disabled={!presentNextCursor || presentLoading}
+                        className="bg-slate-900 hover:bg-slate-850 disabled:bg-slate-950 text-slate-350 hover:text-white border border-slate-850 disabled:border-slate-900 font-bold text-2xs py-1.5 px-3 rounded-lg transition inline-flex items-center space-x-1"
+                      >
+                        <span>Próximo</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>

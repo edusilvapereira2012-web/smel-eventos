@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api';
 import { db, PendingCheckIn, ConfirmedRegistration } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Html5Qrcode } from 'html5-qrcode';
+import type { Html5Qrcode } from 'html5-qrcode';
 import {
   QrCode,
   Wifi,
@@ -55,6 +55,30 @@ export default function CheckInScannerPage() {
 
   // Local active event name
   const [eventName, setEventName] = useState('Carregando Evento...');
+
+  // Workshops state
+  const [workshops, setWorkshops] = useState<any[]>([]);
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>('');
+
+  useEffect(() => {
+    if (eventId) {
+      if (isOnline) {
+        api.get(`/events/${eventId}/workshops`)
+          .then(res => {
+            setWorkshops(res.data);
+            localStorage.setItem(`eh_workshops_${eventId}`, JSON.stringify(res.data));
+          })
+          .catch(err => console.error('Erro ao buscar oficinas:', err));
+      } else {
+        const cached = localStorage.getItem(`eh_workshops_${eventId}`);
+        if (cached) {
+          try {
+            setWorkshops(JSON.parse(cached));
+          } catch (e) {}
+        }
+      }
+    }
+  }, [eventId, isOnline]);
 
   // Live query for pending queue
   const pendingCheckins = useLiveQuery(() =>
@@ -127,6 +151,13 @@ export default function CheckInScannerPage() {
         email: r.email,
         eventId: r.eventId,
         checkedInAt: r.checkedInAt,
+        workshopEnrollments: r.workshopEnrollments ? r.workshopEnrollments.map((w: any) => w.workshopId) : [],
+        workshopCheckins: r.workshopEnrollments ? r.workshopEnrollments.reduce((acc: any, w: any) => {
+          if (w.checkedInAt) {
+            acc[w.workshopId] = w.checkedInAt;
+          }
+          return acc;
+        }, {}) : {},
       }));
 
       await db.confirmedRegistrations.bulkAdd(mapped);
@@ -171,6 +202,7 @@ export default function CheckInScannerPage() {
         checkedInAt: item.checkedInAt,
         deviceId: item.deviceId,
         token: item.token,
+        workshopId: item.workshopId,
       }));
 
       const res = await api.post('/checkin/sync', { checkins: payload });
@@ -224,12 +256,13 @@ export default function CheckInScannerPage() {
         const res = await api.post('/checkin/validate', {
           token,
           deviceId: getDeviceId(),
+          workshopId: selectedWorkshopId || undefined,
         });
         
         setScanResult({
           status: 'success',
-          message: 'Check-in Confirmado!',
-          details: `${res.data.registration.name} (${res.data.registration.code})`,
+          message: res.data.registration.workshopTitle ? 'Check-in Oficina Confirmado!' : 'Check-in Confirmado!',
+          details: `${res.data.registration.name} (${res.data.registration.code})${res.data.registration.workshopTitle ? ` - ${res.data.registration.workshopTitle}` : ''}`,
         });
       } catch (err: any) {
         const errMsg = err.response?.data?.message || 'Falha ao processar check-in';
@@ -266,64 +299,145 @@ export default function CheckInScannerPage() {
         return;
       }
 
-      // Check for local duplications (either in pending queue or already marked checkedInAt)
-      const inQueue = await db.pendingCheckins.where('registrationId').equals(registrationId).first();
-      if (inQueue || reg.checkedInAt) {
-        setScanResult({
-          status: 'warning',
-          message: 'Check-in Duplicado (Offline)',
-          details: `${reg.name} (${reg.code}) já está registrado.`,
+      if (selectedWorkshopId) {
+        // Validate workshop enrollment offline
+        const isEnrolled = reg.workshopEnrollments?.includes(selectedWorkshopId);
+        if (!isEnrolled) {
+          setScanResult({
+            status: 'error',
+            message: 'Não Matriculado',
+            details: `${reg.name} não está matriculado nesta oficina.`,
+          });
+          return;
+        }
+
+        const checkedInTime = reg.workshopCheckins?.[selectedWorkshopId];
+        const inQueue = await db.pendingCheckins.where('registrationId').equals(registrationId).and(c => c.workshopId === selectedWorkshopId).first();
+        if (inQueue || checkedInTime) {
+          setScanResult({
+            status: 'warning',
+            message: 'Check-in Duplicado (Oficina)',
+            details: `${reg.name} já possui check-in nesta oficina.`,
+          });
+          return;
+        }
+
+        // Valid check-in offline: Add to Dexie Queue
+        await db.pendingCheckins.add({
+          registrationId,
+          eventId,
+          checkedInAt: new Date().toISOString(),
+          name: reg.name,
+          code: reg.code,
+          deviceId: getDeviceId(),
+          token,
+          workshopId: selectedWorkshopId,
         });
-        return;
+
+        setScanResult({
+          status: 'success',
+          message: 'Salvo Offline (Oficina)!',
+          details: `${reg.name} (${reg.code}) - Oficina: ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Oficina'}`,
+        });
+      } else {
+        // Check for local duplications (either in pending queue or already marked checkedInAt)
+        const inQueue = await db.pendingCheckins.where('registrationId').equals(registrationId).and(c => !c.workshopId).first();
+        if (inQueue || reg.checkedInAt) {
+          setScanResult({
+            status: 'warning',
+            message: 'Check-in Duplicado (Offline)',
+            details: `${reg.name} (${reg.code}) já está registrado.`,
+          });
+          return;
+        }
+
+        // Valid check-in offline: Add to Dexie Queue
+        await db.pendingCheckins.add({
+          registrationId,
+          eventId,
+          checkedInAt: new Date().toISOString(),
+          name: reg.name,
+          code: reg.code,
+          deviceId: getDeviceId(),
+          token,
+        });
+
+        setScanResult({
+          status: 'success',
+          message: 'Salvo Offline com Sucesso!',
+          details: `${reg.name} (${reg.code}) - Sincronização pendente.`,
+        });
       }
-
-      // Valid check-in offline: Add to Dexie Queue
-      await db.pendingCheckins.add({
-        registrationId,
-        eventId,
-        checkedInAt: new Date().toISOString(),
-        name: reg.name,
-        code: reg.code,
-        deviceId: getDeviceId(),
-        token,
-      });
-
-      setScanResult({
-        status: 'success',
-        message: 'Salvo Offline com Sucesso!',
-        details: `${reg.name} (${reg.code}) - Sincronização pendente.`,
-      });
     }
   };
 
   // Manual Check-in Handler
   const handleManualCheckIn = async (reg: ConfirmedRegistration) => {
-    // Check if duplicate locally
-    const inQueue = await db.pendingCheckins.where('registrationId').equals(reg.id).first();
-    if (inQueue || reg.checkedInAt) {
-      setScanResult({
-        status: 'warning',
-        message: 'Check-in Duplicado',
-        details: `${reg.name} (${reg.code}) já está registrado.`,
+    if (selectedWorkshopId) {
+      const isEnrolled = reg.workshopEnrollments?.includes(selectedWorkshopId);
+      if (!isEnrolled) {
+        setScanResult({
+          status: 'error',
+          message: 'Não Matriculado',
+          details: `${reg.name} não está matriculado nesta oficina.`,
+        });
+        return;
+      }
+
+      const checkedInTime = reg.workshopCheckins?.[selectedWorkshopId];
+      const inQueue = await db.pendingCheckins.where('registrationId').equals(reg.id).and(c => c.workshopId === selectedWorkshopId).first();
+      if (inQueue || checkedInTime) {
+        setScanResult({
+          status: 'warning',
+          message: 'Check-in Duplicado (Oficina)',
+          details: `${reg.name} (${reg.code}) já está registrado nesta oficina.`,
+        });
+        return;
+      }
+
+      await db.pendingCheckins.add({
+        registrationId: reg.id,
+        eventId,
+        checkedInAt: new Date().toISOString(),
+        name: reg.name,
+        code: reg.code,
+        deviceId: getDeviceId(),
+        workshopId: selectedWorkshopId,
       });
-      return;
+
+      setScanResult({
+        status: 'success',
+        message: isOnline ? 'Check-in Enviado (Oficina)!' : 'Salvo Offline (Oficina)!',
+        details: `${reg.name} (${reg.code}) - ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Oficina'}`,
+      });
+    } else {
+      // Check if duplicate locally
+      const inQueue = await db.pendingCheckins.where('registrationId').equals(reg.id).and(c => !c.workshopId).first();
+      if (inQueue || reg.checkedInAt) {
+        setScanResult({
+          status: 'warning',
+          message: 'Check-in Duplicado',
+          details: `${reg.name} (${reg.code}) já está registrado.`,
+        });
+        return;
+      }
+
+      // Add to queue
+      await db.pendingCheckins.add({
+        registrationId: reg.id,
+        eventId,
+        checkedInAt: new Date().toISOString(),
+        name: reg.name,
+        code: reg.code,
+        deviceId: getDeviceId(),
+      });
+
+      setScanResult({
+        status: 'success',
+        message: isOnline ? 'Check-in Enviado!' : 'Salvo Offline com Sucesso!',
+        details: `${reg.name} (${reg.code})`,
+      });
     }
-
-    // Add to queue
-    await db.pendingCheckins.add({
-      registrationId: reg.id,
-      eventId,
-      checkedInAt: new Date().toISOString(),
-      name: reg.name,
-      code: reg.code,
-      deviceId: getDeviceId(),
-    });
-
-    setScanResult({
-      status: 'success',
-      message: isOnline ? 'Check-in Enviado!' : 'Salvo Offline com Sucesso!',
-      details: `${reg.name} (${reg.code})`,
-    });
 
     // Clear search
     setSearchQuery('');
@@ -362,32 +476,68 @@ export default function CheckInScannerPage() {
   const startScanner = async () => {
     try {
       setScanResult(null);
+      const { Html5Qrcode } = await import('html5-qrcode');
       const html5QrCode = new Html5Qrcode('reader');
       setScanner(html5QrCode);
       setScanning(true);
 
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: (w, h) => {
-            const size = Math.min(w, h) * 0.7;
-            return { width: size, height: size };
+      // Try environment facing mode first
+      try {
+        await html5QrCode.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: (w, h) => {
+              const size = Math.min(w, h) * 0.7;
+              return { width: size, height: size };
+            },
           },
-        },
-        (decodedText) => {
-          handleQRCodeScanned(decodedText);
-        },
-        () => {}
-      );
-    } catch (err) {
+          (decodedText) => {
+            handleQRCodeScanned(decodedText);
+          },
+          () => {}
+        );
+      } catch (err) {
+        console.warn('Failed to start camera with environment constraints. Trying fallback...', err);
+        // Fallback to getCameras list
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          // Choose back camera if possible
+          const backCamera = devices.find(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.toLowerCase().includes('traseira') ||
+            device.label.toLowerCase().includes('rear') ||
+            device.label.toLowerCase().includes('environment')
+          );
+          const cameraId = backCamera ? backCamera.id : devices[0].id;
+          
+          await html5QrCode.start(
+            cameraId,
+            {
+              fps: 10,
+              qrbox: (w, h) => {
+                const size = Math.min(w, h) * 0.7;
+                return { width: size, height: size };
+              },
+            },
+            (decodedText) => {
+              handleQRCodeScanned(decodedText);
+            },
+            () => {}
+          );
+        } else {
+          throw new Error('Nenhuma câmera disponível ou sem permissões de acesso.');
+        }
+      }
+    } catch (err: any) {
       console.error(err);
       setScanResult({
         status: 'error',
         message: 'Erro na Câmera',
-        details: 'Permissão negada ou câmera ocupada por outro aplicativo.',
+        details: err?.message || 'Permissão negada ou câmera ocupada por outro aplicativo.',
       });
       setScanning(false);
+      setScanner(null);
     }
   };
 
@@ -484,6 +634,32 @@ export default function CheckInScannerPage() {
       {/* Main Container */}
       <main className="max-w-xl w-full mx-auto px-6 mt-8 flex-1 flex flex-col space-y-6">
         
+        {/* Selection mode (Event wide vs Workshop specific) */}
+        <div className="p-5 bg-slate-900/10 border border-slate-900 rounded-2xl space-y-3.5">
+          <div className="space-y-1">
+            <span className="text-2xs font-extrabold text-violet-400 uppercase tracking-widest block font-sans">Controle de Acesso</span>
+            <h3 className="font-extrabold text-sm text-white font-sans">Selecione o Portão / Ponto de Check-in</h3>
+          </div>
+          <select
+            value={selectedWorkshopId}
+            onChange={(e) => setSelectedWorkshopId(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-900 rounded-xl py-3 px-4 text-xs text-white focus:border-violet-600 focus:outline-none transition-colors appearance-none cursor-pointer font-sans"
+            style={{
+              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 16px center',
+              backgroundSize: '16px'
+            }}
+          >
+            <option value="">Evento Principal (Entrada Geral)</option>
+            {workshops.map((w) => (
+              <option key={w.id} value={w.id}>
+                Oficina: {w.title} ({w.location || 'Sem local'})
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Offline Queue Sync Card */}
         {pendingCheckins.length > 0 && (
           <div className="p-4 bg-violet-950/20 border border-violet-900/40 rounded-2xl flex items-center justify-between gap-4">
@@ -527,15 +703,23 @@ export default function CheckInScannerPage() {
 
         {/* Camera Scanner View */}
         <div className="space-y-4">
-          <div id="reader" className="w-full aspect-square overflow-hidden rounded-2xl border border-slate-900 bg-slate-950 flex flex-col items-center justify-center relative p-6">
+          <div className="relative w-full aspect-square overflow-hidden rounded-2xl border border-slate-900 bg-slate-950">
+            {/* The actual reader element that html5-qrcode attaches to. MUST remain empty and untouched by React children */}
+            <div 
+              id="reader" 
+              className="w-full h-full text-white"
+              style={{ display: scanning ? 'block' : 'none' }}
+            />
+
+            {/* Camera Start UI Overlay */}
             {!scanning && (
-              <div className="text-center space-y-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4">
                 <div className="h-16 w-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-slate-800">
                   <QrCode className="h-8 w-8 text-slate-500" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-sm text-white">Scanner de QR Code</h3>
-                  <p className="text-2xs text-slate-550 max-w-[240px] mx-auto">
+                  <p className="text-2xs text-slate-500 max-w-[240px] mx-auto">
                     Ative a câmera para escanear os QR codes dos ingressos dos participantes.
                   </p>
                 </div>
@@ -549,7 +733,7 @@ export default function CheckInScannerPage() {
             {scanning && (
               <Button
                 onClick={stopScanner}
-                className="absolute bottom-4 right-4 z-10 bg-red-650 hover:bg-red-750 text-white font-bold text-xs p-3 rounded-xl flex items-center space-x-1.5 shadow-lg shadow-red-950/20"
+                className="absolute bottom-4 right-4 z-10 bg-red-600 hover:bg-red-750 text-white font-bold text-xs p-3 rounded-xl flex items-center space-x-1.5 shadow-lg shadow-red-950/20"
               >
                 <Square className="h-4.5 w-4.5" />
                 <span>Parar Câmera</span>
@@ -613,17 +797,37 @@ export default function CheckInScannerPage() {
                     <span className="font-bold text-xs text-white block truncate">{reg.name}</span>
                     <span className="font-mono text-3xs text-slate-500 uppercase tracking-wider">{reg.code} • {reg.email}</span>
                   </div>
-                  <Button
-                    onClick={() => handleManualCheckIn(reg)}
-                    disabled={!!reg.checkedInAt}
-                    className={`font-extrabold text-3xs uppercase tracking-widest px-3 py-1.5 rounded-lg flex-shrink-0 ${
-                      reg.checkedInAt
-                        ? 'bg-slate-950 border border-slate-900 text-slate-600 cursor-not-allowed'
-                        : 'bg-violet-600 hover:bg-violet-750 text-white'
-                    }`}
-                  >
-                    {reg.checkedInAt ? 'Presente' : 'Check-in'}
-                  </Button>
+                  {(() => {
+                    const isEnrolled = selectedWorkshopId ? reg.workshopEnrollments?.includes(selectedWorkshopId) : true;
+                    const isCheckedIn = selectedWorkshopId
+                      ? !!reg.workshopCheckins?.[selectedWorkshopId] || pendingCheckins.some(c => c.registrationId === reg.id && c.workshopId === selectedWorkshopId)
+                      : !!reg.checkedInAt || pendingCheckins.some(c => c.registrationId === reg.id && !c.workshopId);
+
+                    if (!isEnrolled) {
+                      return (
+                        <Button
+                          disabled
+                          className="font-extrabold text-3xs uppercase tracking-widest px-3 py-1.5 rounded-lg flex-shrink-0 bg-slate-950 border border-slate-900 text-slate-650 cursor-not-allowed font-sans"
+                        >
+                          Não Matriculado
+                        </Button>
+                      );
+                    }
+
+                    return (
+                      <Button
+                        onClick={() => handleManualCheckIn(reg)}
+                        disabled={isCheckedIn}
+                        className={`font-extrabold text-3xs uppercase tracking-widest px-3 py-1.5 rounded-lg flex-shrink-0 font-sans ${
+                          isCheckedIn
+                            ? 'bg-slate-950 border border-slate-900 text-slate-600 cursor-not-allowed'
+                            : 'bg-violet-600 hover:bg-violet-750 text-white'
+                        }`}
+                      >
+                        {isCheckedIn ? 'Presente' : 'Check-in'}
+                      </Button>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

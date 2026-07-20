@@ -347,7 +347,7 @@ export class AuthService {
       },
       include: {
         checkIn: true,
-        certificate: true,
+        certificates: true,
         event: {
           select: {
             title: true,
@@ -371,6 +371,15 @@ export class AuthService {
         }
       }
 
+      const certsMapped = reg.certificates ? reg.certificates.map((cert) => ({
+        code: cert.code,
+        fileUrl: cert.fileUrl,
+        issuedAt: cert.issuedAt,
+        type: cert.type,
+        customTitle: cert.customTitle,
+        hours: cert.hours,
+      })) : [];
+
       return {
         id: reg.id,
         code: reg.code,
@@ -387,11 +396,8 @@ export class AuthService {
           checkedInAt: reg.checkIn.checkedInAt,
           deviceId: reg.checkIn.deviceId,
         } : null,
-        certificate: reg.certificate ? {
-          code: reg.certificate.code,
-          fileUrl: reg.certificate.fileUrl,
-          issuedAt: reg.certificate.issuedAt,
-        } : null,
+        certificates: certsMapped,
+        certificate: certsMapped.length > 0 ? certsMapped[0] : null,
       };
     });
 

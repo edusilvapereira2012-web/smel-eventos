@@ -130,6 +130,14 @@ Na área de administração do evento, em **Oficinas**:
 * É possível listar todos os participantes inscritos em cada oficina específica.
 * O organizador pode remover/cancelar administrativamente a inscrição de um participante em uma oficina individual, liberando a vaga instantaneamente para novos cadastros.
 
+### 5.5. Controle de Check-in em Portaria por Oficinas (Online & Offline)
+No dia do evento, a equipe de recepção utiliza a tela de credenciamento (`/checkin/[eventId]`):
+* **Seletor de Ponto de Acesso**: No topo do painel, há um seletor para definir se o controle é para a "Entrada Geral (Evento Principal)" ou para uma "Oficina específica".
+* **Identificação via QR Code Único**: O participante apresenta um único QR Code. Se o operador estiver controlando uma oficina:
+  * O sistema verifica se o inscrito está matriculado naquela oficina. Se não estiver, barra o acesso.
+  * O check-in é registrado de forma isolada para aquela oficina, permitindo que a entrada geral e as demais oficinas permaneçam independentes.
+* **Busca Manual e Fila Offline**: Se a recepção estiver sem sinal, a lista local do PWA valida as matrículas e guarda o check-in na fila do IndexedDB para envio automático assim que a rede retornar.
+
 ---
 
 ## 6. Comunicação e E-mails (Configuração do SMTP)
@@ -208,6 +216,33 @@ Todos os campos cadastrais do formulário de inscrição são obrigatórios:
 Os eventos contam com a integração de localização geográfica para facilitar o trajeto do participante:
 * **Administração**: Ao criar ou editar um evento, o organizador pode especificar o endereço textual completo e inserir o link direto de mapas (Google Maps, Waze ou similar).
 * **Página do Evento (Participante)**: A página do evento exibe um card interativo com o endereço configurado. O participante pode clicar no botão de mapa para abrir diretamente a navegação GPS em seu celular ou computador.
+
+---
+
+## 12. Emissão de Certificados Dinâmicos e Layouts Customizados
+
+A plataforma possui um sistema avançado de geração, personalização e emissão de certificados digitais de participação.
+
+### 12.1. Como Funciona a Emissão Dinâmica (Evento vs Oficinas)
+* **Certificado do Evento Principal**: Emitido para os participantes que realizaram o check-in geral na entrada do evento.
+* **Certificado de Oficinas/Mesas Redondas**: Emitido individualmente para cada oficina em que o participante estava matriculado e registrou presença (check-in específico da oficina). O certificado gerado dinamicamente exibe o título da oficina correspondente e sua carga horária.
+* **Validação do Link**: Cada certificado possui um código validador único (ex: hash alfa-numérico) impresso no rodapé e um QR Code público que direciona para a página `/certificate/[codigo]`, exibindo instantaneamente a folha de autenticidade em PDF.
+
+### 12.2. Utilizando Modelos de Layout Externos (Upload de Imagem & JSON)
+Se o criador do evento quiser utilizar uma arte própria externa de certificado (em vez de usar a identidade visual padrão do sistema):
+1. **Upload do Background**: Faça o upload do arquivo de imagem do certificado no painel administrativo do evento (recomendado: proporção A4 paisagem, ex: `3508x2480 px`, tamanho máximo 5MB).
+2. **Configuração de Coordenadas (JSON)**: Insira o esquema JSON que define a posição exata de cada texto por cima do fundo. Cada campo possui coordenadas X (distância da esquerda) e Y (distância do topo) medidas em pixels na imagem, além do tamanho de fonte, alinhamento e cor hexadecimal do texto.
+   * **Campos customizáveis**:
+     * `name` (Nome do Participante)
+     * `text` (Texto padrão/descrição do evento)
+     * `info` (Data, local e carga horária)
+     * `validation` (Código verificador e chave pública)
+3. **Pré-visualização**: O editor administrativo renderiza um preview dinâmico em tempo real para o organizador ajustar as posições dos textos até ficarem no alinhamento desejado.
+
+### 12.3. Emissão em Lote
+O organizador do evento pode optar por emitir os certificados de todos os participantes presentes de uma única vez:
+* No painel do evento, clique em **Emitir em Lote** (geral ou por oficina específica).
+* O sistema enfileira o envio assíncrono para a fila BullMQ. Cada participante receberá em seu e-mail cadastrado o link de acesso direto e o certificado em anexo.
 
 
 

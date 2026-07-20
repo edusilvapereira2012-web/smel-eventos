@@ -36,7 +36,14 @@ export class CheckInService {
     private readonly auditLog: AuditLogService,
   ) {}
 
-  async validateAndCheckIn(token: string, operatorId?: string, deviceId?: string, ip?: string, userAgent?: string) {
+  async validateAndCheckIn(
+    token: string,
+    operatorId?: string,
+    deviceId?: string,
+    workshopId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     let payload: QRCodePayload;
     const qrSecret = this.configService.get<string>('QR_SECRET') || 'super_secret_qr_signature_key_32_bytes_long_12345';
 
@@ -59,7 +66,9 @@ export class CheckInService {
     const eventId = payload.eventId;
 
     // 1. Antiduplicidade rápida no Redis
-    const redisKey = `checkin:${registrationId}`;
+    const redisKey = workshopId
+      ? `checkin:${registrationId}:workshop:${workshopId}`
+      : `checkin:${registrationId}`;
     const cachedTime = await this.redisService.get(redisKey);
     if (cachedTime) {
       await this.auditLog.log(
@@ -67,7 +76,7 @@ export class CheckInService {
         'CHECKIN_FAILURE',
         'checkin',
         null,
-        { registrationId, eventId, reason: 'Check-in já realizado (Redis cache)', cachedTime },
+        { registrationId, eventId, workshopId, reason: 'Check-in já realizado (Redis cache)', cachedTime },
         ip,
         userAgent,
       );
@@ -110,6 +119,85 @@ export class CheckInService {
         userAgent,
       );
       throw new UnprocessableEntityException('Inscrição não está confirmada');
+    }
+
+    // Se for check-in de oficina específica
+    if (workshopId) {
+      const enrollment = await this.prisma.workshopEnrollment.findUnique({
+        where: {
+          registrationId_workshopId: {
+            registrationId,
+            workshopId,
+          },
+        },
+        include: {
+          workshop: true,
+        },
+      });
+
+      if (!enrollment) {
+        await this.auditLog.log(
+          operatorId || null,
+          'CHECKIN_FAILURE',
+          'checkin',
+          null,
+          { registrationId, eventId, workshopId, reason: 'Participante não está matriculado na oficina' },
+          ip,
+          userAgent,
+        );
+        throw new UnprocessableEntityException('Participante não está matriculado nesta oficina');
+      }
+
+      if (enrollment.checkedInAt) {
+        const checkedInAtStr = enrollment.checkedInAt.toISOString();
+        await this.redisService.set(redisKey, checkedInAtStr, 24 * 60 * 60);
+        await this.auditLog.log(
+          operatorId || null,
+          'CHECKIN_FAILURE',
+          'checkin',
+          enrollment.id,
+          { registrationId, eventId, workshopId, reason: 'Check-in já realizado para esta oficina (DB)' },
+          ip,
+          userAgent,
+        );
+        throw new ConflictException(`Check-in já realizado para esta oficina em ${checkedInAtStr}`);
+      }
+
+      const checkedInAt = new Date();
+      await this.prisma.workshopEnrollment.update({
+        where: {
+          registrationId_workshopId: {
+            registrationId,
+            workshopId,
+          },
+        },
+        data: {
+          checkedInAt,
+          checkedInOperatorId: operatorId,
+        },
+      });
+
+      await this.redisService.set(redisKey, checkedInAt.toISOString(), 24 * 60 * 60);
+
+      await this.auditLog.log(
+        operatorId || null,
+        'WORKSHOP_CHECKIN_SUCCESS',
+        'checkin',
+        enrollment.id,
+        { registrationId, eventId, workshopId, deviceId },
+        ip,
+        userAgent,
+      );
+
+      return {
+        success: true,
+        registration: {
+          name: registration.name,
+          code: registration.code,
+          checkedInAt,
+          workshopTitle: enrollment.workshop.title,
+        },
+      };
     }
 
     // 4. Verificar duplicidade no banco
@@ -197,7 +285,7 @@ export class CheckInService {
   }
 
   async syncOffline(
-    checkins: Array<{ registrationId: string; eventId: string; checkedInAt: string; deviceId?: string; token?: string }>,
+    checkins: Array<{ registrationId: string; eventId: string; checkedInAt: string; deviceId?: string; token?: string; workshopId?: string }>,
     operatorId?: string,
     ip?: string,
     userAgent?: string,
@@ -234,7 +322,9 @@ export class CheckInService {
           }
         }
 
-        const redisKey = `checkin:${registrationId}`;
+        const redisKey = item.workshopId
+          ? `checkin:${registrationId}:workshop:${item.workshopId}`
+          : `checkin:${registrationId}`;
         const cachedTime = await this.redisService.get(redisKey);
         if (cachedTime) {
           await this.auditLog.log(
@@ -242,7 +332,7 @@ export class CheckInService {
             'CHECKIN_FAILURE',
             'checkin',
             null,
-            { registrationId, eventId, reason: 'Check-in já realizado (Redis cache durante sync)', cachedTime },
+            { registrationId, eventId, workshopId: item.workshopId, reason: 'Check-in já realizado (Redis cache durante sync)', cachedTime },
             ip,
             userAgent,
           );
@@ -285,6 +375,62 @@ export class CheckInService {
             userAgent,
           );
           errors.push({ registrationId, error: 'Inscrição não está confirmada' });
+          continue;
+        }
+
+        // Se for check-in de oficina offline
+        if (item.workshopId) {
+          const enrollment = await this.prisma.workshopEnrollment.findUnique({
+            where: {
+              registrationId_workshopId: {
+                registrationId,
+                workshopId: item.workshopId,
+              },
+            },
+            include: {
+              workshop: true,
+            },
+          });
+
+          if (!enrollment) {
+            errors.push({ registrationId, error: 'Participante não está matriculado nesta oficina' });
+            continue;
+          }
+
+          if (enrollment.checkedInAt) {
+            const checkedInAtStr = enrollment.checkedInAt.toISOString();
+            await this.redisService.set(redisKey, checkedInAtStr, 24 * 60 * 60);
+            duplicates++;
+            continue;
+          }
+
+          const checkedInAt = new Date(item.checkedInAt);
+          await this.prisma.workshopEnrollment.update({
+            where: {
+              registrationId_workshopId: {
+                registrationId,
+                workshopId: item.workshopId,
+              },
+            },
+            data: {
+              checkedInAt,
+              checkedInOperatorId: operatorId,
+            },
+          });
+
+          await this.redisService.set(redisKey, checkedInAt.toISOString(), 24 * 60 * 60);
+
+          await this.auditLog.log(
+            operatorId || null,
+            'WORKSHOP_CHECKIN_SUCCESS',
+            'checkin',
+            enrollment.id,
+            { registrationId, eventId, workshopId: item.workshopId, deviceId: item.deviceId, syncedOffline: true },
+            ip,
+            userAgent,
+          );
+
+          processed++;
           continue;
         }
 

@@ -321,9 +321,10 @@ export class ReportsService {
       });
 
       // Draw table columns header
-      currentPage.drawText('CODIGO', { x: 50, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
-      currentPage.drawText('PARTICIPANTE / E-MAIL', { x: 170, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
-      currentPage.drawText('ASSINATURA', { x: 380, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
+      currentPage.drawText('CODIGO', { x: 45, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
+      currentPage.drawText('PARTICIPANTE / E-MAIL', { x: 135, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
+      currentPage.drawText('PRESENCA', { x: 355, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
+      currentPage.drawText('ASSINATURA', { x: 425, y: pageHeight - 115, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.23) });
 
       // Table Header Line separator
       currentPage.drawLine({
@@ -351,18 +352,18 @@ export class ReportsService {
 
       // Draw Code
       page.drawText(reg.code, {
-        x: 50,
+        x: 45,
         y: yPosition + 10,
         size: 9,
         font: fontRegular,
         color: rgb(0.09, 0.09, 0.11),
       });
 
-      // Draw Name (truncated if too long to prevent overlapping signature)
+      // Draw Name (truncated if too long to prevent overlapping checkbox)
       const cleanedName = this.cleanStringForPdf(reg.name);
-      const displayName = cleanedName.length > 32 ? cleanedName.substring(0, 30) + '...' : cleanedName;
+      const displayName = cleanedName.length > 38 ? cleanedName.substring(0, 36) + '...' : cleanedName;
       page.drawText(displayName, {
-        x: 170,
+        x: 135,
         y: yPosition + 14,
         size: 9,
         font: fontBold,
@@ -370,18 +371,29 @@ export class ReportsService {
       });
 
       // Draw Email
-      const displayNameEmail = reg.email.length > 38 ? reg.email.substring(0, 35) + '...' : reg.email;
+      const displayNameEmail = reg.email.length > 42 ? reg.email.substring(0, 39) + '...' : reg.email;
       page.drawText(displayNameEmail, {
-        x: 170,
+        x: 135,
         y: yPosition + 2,
         size: 8,
         font: fontRegular,
         color: rgb(0.38, 0.43, 0.53),
       });
 
+      // Draw Checkbox for presence
+      page.drawRectangle({
+        x: 355,
+        y: yPosition + 8,
+        width: 10,
+        height: 10,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.38, 0.43, 0.53),
+        borderWidth: 1,
+      });
+
       // Draw Signature Line
-      page.drawText('___________________________________', {
-        x: 380,
+      page.drawText('_________________________', {
+        x: 425,
         y: yPosition + 10,
         size: 9,
         font: fontRegular,

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CertificatesService } from './certificates.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -16,16 +17,21 @@ describe('CertificatesService', () => {
     },
     registration: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     certificate: {
       findUnique: jest.fn(),
       update: jest.fn(),
-      create: jest.fn(),
+      findMany: jest.fn(),
     },
   };
 
   const mockQueue = {
     add: jest.fn(),
+  };
+
+  const mockConfigService = {
+    get: jest.fn().mockReturnValue('http://localhost:3000'),
   };
 
   beforeEach(async () => {
@@ -34,6 +40,7 @@ describe('CertificatesService', () => {
         CertificatesService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: getQueueToken('certificates'), useValue: mockQueue },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -75,15 +82,49 @@ describe('CertificatesService', () => {
       expect(queue.add).toHaveBeenNthCalledWith(
         1,
         'generate-certificate',
-        { registrationId: 'reg-1', tenantId: 'tenant-1', eventId: 'event-1' },
+        {
+          registrationId: 'reg-1',
+          tenantId: 'tenant-1',
+          eventId: 'event-1',
+          type: 'EVENT',
+          workshopId: undefined,
+          customTitle: undefined,
+          hours: undefined,
+        },
         expect.any(Object),
       );
+    });
+
+    it('filtragem por registrationIds → enfileira apenas os selecionados', async () => {
+      mockPrisma.event.findFirst.mockResolvedValue({ id: 'event-1' });
+      mockPrisma.registration.findMany.mockResolvedValue([
+        { id: 'reg-1', name: 'John Doe', email: 'john@example.com' },
+      ]);
+
+      const result = await service.generateBatch('event-1', 'tenant-1', { registrationIds: ['reg-1'] });
+
+      expect(result.count).toBe(1);
+      expect(mockPrisma.registration.findMany).toHaveBeenCalledWith({
+        where: {
+          eventId: 'event-1',
+          status: 'CONFIRMED',
+          checkedInAt: { not: null },
+          certificates: {
+            none: {
+              type: 'EVENT',
+            },
+          },
+          id: { in: ['reg-1'] },
+        },
+      });
+      expect(queue.add).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('findByCode', () => {
     it('certificado não encontrado → 404', async () => {
       mockPrisma.certificate.findUnique.mockResolvedValue(null);
+      mockPrisma.certificate.findMany.mockResolvedValue([]);
 
       await expect(service.findByCode('CERT-INVALID')).rejects.toThrow(NotFoundException);
     });
@@ -93,9 +134,16 @@ describe('CertificatesService', () => {
         id: 'cert-1',
         code: 'CERT-1234',
         eventId: 'event-1',
+        registrationId: 'reg-1',
         issuedAt: new Date('2026-06-24T12:00:00Z'),
-        registration: { name: 'John Doe' },
+        type: 'EVENT',
+        workshopId: null,
+        customTitle: null,
+        hours: 8,
       });
+      mockPrisma.registration.findUnique.mockResolvedValue({
+        name: 'John Doe',
+      } as any);
       mockPrisma.event.findUnique.mockResolvedValue({
         id: 'event-1',
         title: 'Event Test',
@@ -110,6 +158,9 @@ describe('CertificatesService', () => {
         eventTitle: 'Event Test',
         eventDate: '2026-06-20',
         issuedAt: expect.any(Date),
+        type: 'EVENT',
+        activityTitle: '',
+        hours: 8,
       });
     });
   });
@@ -117,6 +168,7 @@ describe('CertificatesService', () => {
   describe('downloadCertificate', () => {
     it('certificado não encontrado → 404', async () => {
       mockPrisma.certificate.findUnique.mockResolvedValue(null);
+      mockPrisma.certificate.findMany.mockResolvedValue([]);
 
       await expect(service.downloadCertificate('CERT-INVALID')).rejects.toThrow(NotFoundException);
     });
@@ -133,7 +185,7 @@ describe('CertificatesService', () => {
 
       expect(result).toBe('http://minio/cert.pdf');
       expect(mockPrisma.certificate.update).toHaveBeenCalledWith({
-        where: { code: 'CERT-1234' },
+        where: { id: 'cert-1' },
         data: { downloadCount: { increment: 1 } },
       });
     });

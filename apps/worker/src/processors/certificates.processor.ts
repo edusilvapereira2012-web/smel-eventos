@@ -58,9 +58,19 @@ export class CertificatesProcessor implements OnModuleInit {
   }
 
   @Process('generate-certificate')
-  async handleGenerateCertificate(job: Job<{ registrationId: string; tenantId: string; eventId: string }>) {
-    const { registrationId, tenantId, eventId } = job.data;
-    this.logger.log(`[Job ${job.id}] Iniciando geração de certificado para inscrição ${registrationId}`, 'CertificatesProcessor');
+  async handleGenerateCertificate(
+    job: Job<{
+      registrationId: string;
+      tenantId: string;
+      eventId: string;
+      type?: string;
+      workshopId?: string;
+      customTitle?: string;
+      hours?: number;
+    }>,
+  ) {
+    const { registrationId, tenantId, eventId, type = 'EVENT', workshopId, customTitle, hours } = job.data;
+    this.logger.log(`[Job ${job.id}] Iniciando geração de certificado (${type}) para inscrição ${registrationId}`, 'CertificatesProcessor');
 
     // 1. Buscar inscrição, evento e organização
     const registration = await this.prisma.registration.findUnique({
@@ -78,6 +88,14 @@ export class CertificatesProcessor implements OnModuleInit {
 
     if (!tenant) {
       throw new Error(`Organização ${tenantId} não encontrada.`);
+    }
+
+    // Buscar oficina se aplicável
+    let workshop = null;
+    if (type === 'WORKSHOP' && workshopId) {
+      workshop = await this.prisma.workshop.findUnique({
+        where: { id: workshopId },
+      });
     }
 
     // 2. Gerar código único e URL de validação
@@ -158,11 +176,41 @@ export class CertificatesProcessor implements OnModuleInit {
     const certSigner = registration.event.certificateSigner || tenant.certificateSigner || '';
     const certSignerUrl = registration.event.certificateSignerUrl || tenant.certificateSignerUrl || '';
 
-    const bodyText = certBodyTemplate
-      .replace('{NOME}', registration.name)
-      .replace('{TÍTULO}', registration.event.title)
-      .replace('{DATA}', eventDateStr)
-      .replace('{X}', String(certHours));
+    // Define title and hours based on certificate type
+    let certTitleToUse = certTitle;
+    let durationHours = certHours;
+
+    if (type === 'WORKSHOP') {
+      certTitleToUse = 'CERTIFICADO DE OFICINA';
+      const workshopDuration = workshop
+        ? Math.ceil((new Date(workshop.endTime).getTime() - new Date(workshop.startTime).getTime()) / (1000 * 60 * 60))
+        : certHours;
+      durationHours = hours || workshopDuration || certHours;
+    } else if (type === 'CUSTOM') {
+      certTitleToUse = 'CERTIFICADO DE PARTICIPAÇÃO';
+      durationHours = hours || certHours;
+    }
+
+    let bodyText = '';
+    if (type === 'EVENT') {
+      bodyText = certBodyTemplate
+        .replace('{NOME}', registration.name)
+        .replace('{TÍTULO}', registration.event.title)
+        .replace('{DATA}', eventDateStr)
+        .replace('{X}', String(certHours));
+    } else {
+      const activityName = type === 'WORKSHOP' ? (workshop?.title || '') : (customTitle || '');
+      let subTemplate = certBodyTemplate;
+      if (!subTemplate.includes('{ATIVIDADE}')) {
+        subTemplate = 'Certificamos que {NOME} participou da atividade "{ATIVIDADE}" no evento {TÍTULO}, realizado em {DATA}, com carga horária total de {X} horas.';
+      }
+      bodyText = subTemplate
+        .replace('{NOME}', registration.name)
+        .replace('{TÍTULO}', registration.event.title)
+        .replace('{ATIVIDADE}', activityName)
+        .replace('{DATA}', eventDateStr)
+        .replace('{X}', String(durationHours));
+    }
 
     // Check if Event has custom layout configuration
     const isCustom = !!registration.event.certificateBackgroundUrl;
@@ -230,7 +278,7 @@ export class CertificatesProcessor implements OnModuleInit {
 
       // 1. Draw Title
       if (titleConfig.enabled !== false) {
-        drawCenteredText(certTitle, titleConfig.x, titleConfig.y, titleConfig.fontSize || 28, fontBold, titleConfig.color);
+        drawCenteredText(certTitleToUse, titleConfig.x, titleConfig.y, titleConfig.fontSize || 28, fontBold, titleConfig.color);
       }
 
       // 2. Draw Name
@@ -405,8 +453,8 @@ export class CertificatesProcessor implements OnModuleInit {
 
       // Título do Certificado
       const titleSize = 28;
-      const titleWidth = fontBold.widthOfTextAtSize(certTitle, titleSize);
-      page.drawText(certTitle, {
+      const titleWidth = fontBold.widthOfTextAtSize(certTitleToUse, titleSize);
+      page.drawText(certTitleToUse, {
         x: width / 2 - titleWidth / 2,
         y: 430,
         size: titleSize,
@@ -540,10 +588,16 @@ export class CertificatesProcessor implements OnModuleInit {
       { 'Content-Type': 'application/pdf' }
     );
 
-    const minioEndpoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
-    const minioPort = this.configService.get<number>('MINIO_PORT') || 9000;
-    const publicHost = minioEndpoint === 'minio' ? 'localhost' : minioEndpoint;
-    const fileUrl = `http://${publicHost}:${minioPort}/${this.bucketName}/${filename}`;
+    const externalUrl = this.configService.get<string>('MINIO_EXTERNAL_URL');
+    let fileUrl = '';
+    if (externalUrl) {
+      fileUrl = `${externalUrl}/${this.bucketName}/${filename}`;
+    } else {
+      const minioEndpoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
+      const minioPort = this.configService.get<number>('MINIO_PORT') || 9000;
+      const publicHost = minioEndpoint === 'minio' ? 'localhost' : minioEndpoint;
+      fileUrl = `http://${publicHost}:${minioPort}/${this.bucketName}/${filename}`;
+    }
 
     // 7. Salvar registro no Banco de Dados
     await this.prisma.certificate.create({
@@ -552,20 +606,31 @@ export class CertificatesProcessor implements OnModuleInit {
         eventId,
         code,
         fileUrl,
+        type,
+        workshopId,
+        customTitle,
+        hours: Number(durationHours),
       },
     });
+
+    const activityName = type === 'WORKSHOP' ? (workshop?.title || '') : (customTitle || '');
+    const emailSubject = type === 'EVENT'
+      ? 'Seu certificado está disponível! — SMEL-Plataforma de Eventos'
+      : `Seu certificado da atividade "${activityName}" está disponível! — SMEL-Plataforma de Eventos`;
 
     // 8. Enfileirar envio de e-mail com BullMQ centralizado
     const emailLog = await this.prisma.emailLog.create({
       data: {
         tenantId,
         to: registration.email,
-        subject: 'Seu certificado está disponível! — SMEL-Plataforma de Eventos',
+        subject: emailSubject,
         template: 'certificate-issued',
         variables: {
           name: registration.name,
           eventTitle: registration.event.title,
+          activityTitle: activityName,
           code,
+          type,
         },
         status: 'PENDING',
       },

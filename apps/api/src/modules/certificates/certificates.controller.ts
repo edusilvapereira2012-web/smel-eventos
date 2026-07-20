@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { CertificatesService } from './certificates.service';
@@ -20,10 +20,43 @@ export class CertificatesController {
   @HttpCode(HttpStatus.ACCEPTED)
   async generateBatch(
     @Param('eventId') eventId: string,
+    @Body('registrationIds') registrationIds: string[] | undefined,
+    @Body('type') type: string | undefined,
+    @Body('workshopId') workshopId: string | undefined,
+    @Body('customTitle') customTitle: string | undefined,
+    @Body('hours') hours: number | undefined,
     @Req() req: any,
   ) {
     const tenantId = req.headers['x-tenant-id'] as string;
-    return this.certificatesService.generateBatch(eventId, tenantId);
+    return this.certificatesService.generateBatch(eventId, tenantId, {
+      registrationIds,
+      type,
+      workshopId,
+      customTitle,
+      hours,
+    });
+  }
+
+  @Post('registrations/:id/certificate/generate')
+  @RequirePermission('events.update')
+  @ApiBearerAuth()
+  @ApiHeader({ name: 'x-tenant-id', required: true, description: 'ID do Tenant ativo' })
+  @ApiOperation({ summary: 'Gera e envia o certificado de uma inscrição individualmente' })
+  async generateIndividual(
+    @Param('id') registrationId: string,
+    @Body('type') type: string | undefined,
+    @Body('workshopId') workshopId: string | undefined,
+    @Body('customTitle') customTitle: string | undefined,
+    @Body('hours') hours: number | undefined,
+    @Req() req: any,
+  ) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    return this.certificatesService.generateIndividual(registrationId, tenantId, {
+      type,
+      workshopId,
+      customTitle,
+      hours,
+    });
   }
 
   @Get('certificates/:code')

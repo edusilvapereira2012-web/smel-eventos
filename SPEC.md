@@ -93,15 +93,19 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
   * **Prevenção de Duplicidade (Blind Index)**: Implementação do campo `cpfHash` indexado com unicidade por evento (`@@unique([eventId, cpfHash])`). O hash é gerado utilizando HMAC-SHA256 a partir do CPF limpo (somente dígitos) usando a `ENCRYPTION_KEY`. Permite busca rápida e bloqueio de cadastros duplicados no mesmo evento sem expor ou decodificar dados sensíveis.
   * **Validação de CPF**: Integração da validação matemática oficial do CPF (verificação de formato e cálculo dos dígitos verificadores) no fluxo de inscrição do participante, bloqueando cadastros de CPF inválido antes de salvar no banco de dados.
 
-### 3.5. QR Code, Check-in e Scanner Offline (Leva 06)
+### 3.5. QR Code, Check-in e Scanner Offline (Leva 06 / Leva 14)
 * **Assinatura Criptográfica**: Ingressos emitidos no formato de token JWT assinado (`QR_SECRET`) contendo identificadores essenciais.
 * **Antiduplicidade**: Validação estrita contra múltiplos check-ins para o mesmo ingresso (retorna `409 Conflict` se já inserido).
+* **Check-in por Ponto / Oficinas**: O operador de portaria pode selecionar se o ponto de entrada é para o "Evento Principal" ou para uma "Oficina específica". O sistema valida a matrícula do participante na oficina selecionada e registra o check-in isolado na oficina (evitando duplicidades).
 * **Sincronização Offline**:
-  * Operação offline via PWA móvel utilizando **Dexie.js** (IndexedDB) para cachear ingressos válidos e reter check-ins efetuados localmente.
-  * Sincronização em lote (`POST /api/checkin/sync`) com processamento individualizado e transações atômicas.
+  * Operação offline via PWA móvel utilizando **Dexie.js** (IndexedDB) para cachear ingressos válidos (incluindo mapeamento de matrículas e presença nas oficinas) e reter check-ins efetuados localmente.
+  * Sincronização em lote (`POST /api/checkin/sync`) com suporte a `workshopId` para processamento individualizado e transações atômicas das presenças coletadas sem rede.
 
-### 3.6. Certificados Digitais (Leva 07)
-* **Geração de PDF**: Processador de fila que renderiza um layout A4 paisagem, injeta assinatura digital institucional, logotipo da organização e QR Code vetorial público de validação.
+### 3.6. Certificados Digitais e Layouts Dinâmicos (Leva 07 / Leva 14)
+* **Modelos Externos e Customização**: Suporte à importação de modelos de layout externos configurados via painel administrativo. Cada organização/evento pode carregar uma imagem de fundo (background) customizada (`certificateLayoutUrl`) e um esquema de mapeamento de texto em formato JSON (`certificateLayoutJson`) contendo coordenadas (X, Y), tamanhos de fonte, alinhamentos e cores dos textos dinâmicos (Nome do Participante, Título do Evento, Carga Horária, Data e Código de Validação).
+* **Emissão Específica e Dinâmica**: Permite a emissão e geração de certificados tanto para o Evento Principal (Entrada Geral) quanto para oficinas específicas do evento (ex: Oficinas, Mesas Redondas).
+* **Geração de PDF**: Processador de fila que renderiza o layout A4 paisagem dinamicamente. Se houver layout customizado, carrega a imagem externa como plano de fundo e posiciona os dados sobrepostos usando as coordenadas especificadas; caso contrário, utiliza o modelo institucional padrão da plataforma. Adiciona assinatura digital institucional, logotipo e QR Code vetorial público de validação.
+* **Envio em Lote e Individual**: O painel administrativo permite emitir e enviar por e-mail os certificados individualmente ou em lote para todos os participantes que registraram presença.
 * **Fila BullMQ**: Processamento assíncrono em segundo plano para evitar gargalos na API.
 * **Validação Pública**: Endpoint público e sem autenticação para verificação rápida do código único do certificado com exibição visual de autenticidade.
 

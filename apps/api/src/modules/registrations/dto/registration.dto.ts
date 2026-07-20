@@ -53,6 +53,10 @@ export class ListRegistrationsQueryDto {
 
   @IsOptional()
   @IsString()
+  checkedIn?: string;
+
+  @IsOptional()
+  @IsString()
   cursor?: string;
 
   @IsOptional()
@@ -60,4 +64,16 @@ export class ListRegistrationsQueryDto {
   @IsInt()
   @Min(1)
   limit?: number;
+
+  @IsOptional()
+  @IsString()
+  certificateType?: string;
+
+  @IsOptional()
+  @IsString()
+  workshopId?: string;
+
+  @IsOptional()
+  @IsString()
+  customTitle?: string;
 }

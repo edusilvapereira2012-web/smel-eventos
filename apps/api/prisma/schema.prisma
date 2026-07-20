@@ -180,7 +180,7 @@ model Registration {
   transferredFrom     String?
   metadata            Json?
   checkIn             CheckIn?
-  certificate         Certificate?
+  certificates        Certificate[]
   workshopEnrollments WorkshopEnrollment[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
@@ -221,13 +221,21 @@ model CheckIn {
 
 model Certificate {
   id             String       @id @default(uuid())
-  registrationId String       @unique
+  registrationId String
   registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   eventId        String
   code           String       @unique
   fileUrl        String
+  type           String       @default("EVENT")
+  workshopId     String?
+  workshop       Workshop?    @relation(fields: [workshopId], references: [id], onDelete: SetNull)
+  customTitle    String?
+  hours          Int?
   issuedAt       DateTime     @default(now())
   downloadCount  Int          @default(0)
+
+  @@index([registrationId, type, workshopId])
+  @@index([eventId])
 }
 
 model EmailLog {
@@ -266,17 +274,20 @@ model Workshop {
   speakerId   String?
   speaker     EventSpeaker?        @relation(fields: [speakerId], references: [id], onDelete: SetNull)
   enrollments WorkshopEnrollment[]
+  certificates Certificate[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 }
 
 model WorkshopEnrollment {
-  id             String       @id @default(uuid())
-  registrationId String
-  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  workshopId     String
-  workshop       Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
+  id                  String       @id @default(uuid())
+  registrationId      String
+  registration        Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  workshopId          String
+  workshop            Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt           DateTime     @default(now())
+  checkedInAt         DateTime?
+  checkedInOperatorId String?
 
   @@unique([registrationId, workshopId])
   @@index([registrationId])

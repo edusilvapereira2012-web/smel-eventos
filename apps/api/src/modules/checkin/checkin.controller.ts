@@ -22,7 +22,7 @@ export class CheckInController {
     const operatorId = req.user?.id;
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
-    return this.checkInService.validateAndCheckIn(dto.token, operatorId, dto.deviceId, ip, userAgent);
+    return this.checkInService.validateAndCheckIn(dto.token, operatorId, dto.deviceId, dto.workshopId, ip, userAgent);
   }
 
   @Post('sync')

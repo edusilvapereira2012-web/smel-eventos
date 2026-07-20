@@ -123,7 +123,7 @@ export default function PublicCertificateValidation() {
                   <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Data de Realização</span>
                   <span className="text-sm font-medium text-slate-300 flex items-center mt-1">
                     <Calendar className="h-4 w-4 mr-1.5 text-slate-400" />
-                    {new Date(data.eventDate).toLocaleDateString('pt-BR')}
+                    {data.eventDate ? data.eventDate.split('-').reverse().join('/') : ''}
                   </span>
                 </div>
                 <div>

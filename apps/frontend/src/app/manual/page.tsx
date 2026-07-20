@@ -188,8 +188,7 @@ export default function ManualPage() {
 
         {/* Tab Contents */}
         <div className="bg-slate-900/20 border border-slate-900 rounded-2xl p-6 md:p-8 backdrop-blur-xl shadow-2xl space-y-8">
-          
-          {/* ================= SUPERADMIN MANUAL ================= */}
+                {/* ================= SUPERADMIN MANUAL ================= */}
           {activeTab === 'superadmin' && (
             <div className="space-y-6 animate-fadeIn">
               <div className="flex items-center space-x-3 border-b border-slate-850 pb-4">
@@ -278,16 +277,16 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-violet-400" />
-                    6. Centenas e Milhares de Acessos Simultâneos
+                    6. Preparado para Alta Concorrência
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    O sistema foi projetado e está preparado para suportar de centenas a milhares de acessos simultâneos com estabilidade por meio de:
+                    O sistema suporta milhares de acessos simultâneos sem gargalos graças a:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
-                    <li><strong>Processamento Assíncrono (BullMQ)</strong>: Envio de e-mails e geração de PDFs são processados em background, mantendo a API leve.</li>
-                    <li><strong>Pessimistic Locking</strong>: Previne overbooking em eventos de alta concorrência por meio de travas no nível do banco.</li>
-                    <li><strong>Logger Assíncrono (Pino)</strong>: Escrita rápida de logs sem bloquear o Event Loop do Node.js.</li>
-                    <li><strong>PWA + Dexie.js</strong>: Check-in offline que reduz requisições redundantes na API.</li>
+                    <li><strong>Processamento Assíncrono (BullMQ)</strong>: Envio de e-mails, emissões em lote e gerações de certificados PDF são processados em background no container Worker.</li>
+                    <li><strong>Pessimistic Locking</strong>: Previne overbooking na compra/inscrição de ingressos e oficinas por travas diretas no nível de banco.</li>
+                    <li><strong>Logger Assíncrono (Pino)</strong>: Gravação rápida de auditoria sem bloquear o Event Loop do Node.js.</li>
+                    <li><strong>PWA + Dexie.js</strong>: Check-in offline que reduz requisições redundantes de validação.</li>
                   </ul>
                 </div>
 
@@ -302,6 +301,19 @@ export default function ManualPage() {
                   <p className="text-xs text-slate-450 leading-relaxed">
                     Em caso de migração de chaves ou cadastros antigos sem hash, o script utilitário de manutenção <code>migrate-cpf-hash.js</code> realiza a rotação de chaves e backfill de forma automatizada no banco de dados central da produção.
                   </p>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-violet-400" />
+                    8. Layouts Customizados de Certificados
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    O Superadmin possui a responsabilidade técnica de dar suporte e auditar a correta importação de templates e coordenadas JSON. 
+                  </p>
+                  <div className="p-3 bg-violet-950/20 border border-violet-900/30 rounded-lg text-xs text-violet-300">
+                    O sistema de arquivos local/S3 armazena o background do certificado e a API valida o esquema de coordenadas em pixels (X, Y) do JSON. Em caso de falha no renderizador do Worker, verifique as dependências do canvas do Node.js instaladas no container de produção.
+                  </div>
                 </div>
               </div>
             </div>
@@ -365,7 +377,7 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Lock className="h-4.5 w-4.5 text-emerald-400" />
-                    4. LGPD e Logs de Auditoria
+                    4. LGPD, Logs de Auditoria e E-mails
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Os dados dos participantes são protegidos de acordo com a LGPD. O CPF é criptografado em banco usando <code>AES-256-GCM</code> e exibido de forma mascarada.
@@ -378,21 +390,38 @@ export default function ManualPage() {
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
-                    <Shield className="h-4.5 w-4.5 text-emerald-400" />
-                    5. Validação de CPF e Bloqueio de Duplicidade
+                    <Sparkles className="h-4.5 w-4.5 text-emerald-400" />
+                    5. Gestão de Oficinas Integradas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    A plataforma rejeita inscrições que utilizem CPFs matematicamente inválidos ou fictícios. Além disso, impede que o mesmo CPF seja utilizado em mais de uma inscrição para o mesmo evento (confirmada ou lista de espera), evitando duplicidades.
+                    Para habilitar o cadastro de oficinas e palestrantes no evento (como no CONLUZ):
                   </p>
-                  <p className="text-xs text-slate-450 leading-relaxed">
-                    O controle é efetuado de forma anônima e segura por meio de um <em>blind index</em> em conformidade com a LGPD, prevenindo que participantes usem múltiplos e-mails para conseguir várias vagas.
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1.5">
+                    <li>Ao criar ou editar o evento, configure o **&quot;Limite de Oficinas por Participante&quot;** (`maxWorkshops`) com um valor maior que zero.</li>
+                    <li>Acesse o menu de **Oficinas** para cadastrar as atividades e os respectivos palestrantes.</li>
+                    <li>Defina a capacidade máxima de cada oficina. O sistema impedirá automaticamente o overbooking através de travas de concorrência.</li>
+                  </ul>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <FileText className="h-4.5 w-4.5 text-emerald-400" />
+                    6. Personalização e Emissão de Certificados
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Você pode configurar um layout próprio de certificado para a organização ou para um evento específico:
                   </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li>**Upload de Background**: Envie uma imagem de fundo (recomendável formato A4 paisagem, tamanho máximo 5MB).</li>
+                    <li>**Mapeamento de Coordenadas JSON**: Defina em pixels as coordenadas (X, Y) para sobreposição do nome do participante, carga horária, data, texto padrão e código de autenticação.</li>
+                    <li>**Emissão Geral & Oficinas**: O painel permite emitir e enviar por e-mail os certificados individualmente ou em lote para todos os presentes. O certificado geral usa os dados do evento principal, e o das oficinas puxa dinamicamente a carga horária e o título da oficina em que o participante registrou presença.</li>
+                  </ul>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="h-4.5 w-4.5 text-emerald-400" />
-                    6. Especificações de Banners e Mídia
+                    7. Especificações de Banners e Mídia
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Para garantir a melhor exibição nas páginas públicas e evitar erros durante a criação ou edição de eventos, utilize banners dentro dos limites e padrões do sistema:
@@ -468,24 +497,43 @@ export default function ManualPage() {
                     3. Gestão e Monitoramento de Inscritos
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Você pode visualizar a listagem de inscritos para os eventos sob sua responsabilidade, monitorando quem já realizou o credenciamento e quem está na fila de espera.
+                    Você pode visualizar a listagem de inscritos para os eventos sob sua responsabilidade, monitorando quem já realizou o credenciamento e quem está na fila de espera geral do evento.
                   </p>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-blue-400" />
+                    4. Gestão Operacional de Oficinas
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Se o evento tiver oficinas ativas, o organizador tem acesso total para gerenciar o andamento das oficinas:
+                  </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li>Cadastrar e associar palestrantes.</li>
+                    <li>Visualizar participantes matriculados em cada oficina específica.</li>
+                    <li>Realizar cancelamentos administrativos de inscrições em oficinas específicas para liberar vagas.</li>
+                  </ul>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <QrCode className="h-4.5 w-4.5 text-blue-400" />
-                    4. Validação de Ingressos (Portaria)
+                    5. Validação de Ingressos e Ponto de Acesso
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Você possui as permissões necessárias para operar o scanner de ingressos na portaria do evento, realizando check-ins rápidos por câmera ou buscas manuais por CPF/Nome.
+                    Você possui permissão para operar a portaria rápida de check-in:
                   </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li>Validar o ingresso geral do participante no evento principal.</li>
+                    <li>Selecionar no painel uma oficina específica e escanear o QR Code único do participante para registrar a presença apenas naquela oficina (verificando se o participante está devidamente matriculado nela).</li>
+                  </ul>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <UserCheck className="h-4.5 w-4.5 text-blue-400" />
-                    5. Unicidade de CPF por Evento
+                    6. Unicidade de CPF por Evento
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Para preservar a integridade da listagem e a distribuição justa das vagas, o sistema bloqueia inscrições redundantes que utilizem o mesmo CPF no mesmo evento (mesmo informando e-mails diferentes).
@@ -498,7 +546,7 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 col-span-1 md:col-span-2">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="h-4.5 w-4.5 text-blue-400" />
-                    6. Especificações de Banners e Mídia
+                    7. Especificações de Banners e Mídia
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Ao editar eventos, atente-se às regras de upload do banner para garantir o preenchimento correto e evitar erros na interface:
@@ -548,57 +596,68 @@ export default function ManualPage() {
                     Na tela de credenciamento do evento, ative a câmera do seu dispositivo móvel ou tablet. Aponte para o QR Code gerado pelo participante no ingresso PDF ou celular.
                   </p>
                   <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg text-xs text-slate-350">
-                    O sistema validará o token JWT assinado criptograficamente, garantindo que o ingresso é autêntico e pertence a este evento. Se o ingresso já tiver sido validado antes, o sistema impedirá o acesso retornando <strong>Check-in já realizado (409 Conflict)</strong>.
+                    O sistema validará o token JWT assinado criptograficamente, garantindo que o ingresso é autêntico e pertence a este evento. Se o ingresso já tiver sido validado antes no ponto de acesso selecionado, o sistema impedirá o acesso retornando <strong>Check-in já realizado (409 Conflict)</strong>.
                   </div>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
-                    <Users className="h-4.5 w-4.5 text-amber-400" />
-                    2. Busca Manual
+                    <Sparkles className="h-4.5 w-4.5 text-amber-400" />
+                    2. Check-in por Pontos / Oficina
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Caso a câmera do dispositivo apresente problemas ou o participante não tenha o QR Code em mãos, utilize o campo de busca manual no topo do leitor para localizar a inscrição por:
+                    A portaria de check-in permite agora o controle segmentado:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
-                    <li>Nome Completo</li>
-                    <li>CPF do Participante</li>
+                    <li>No topo da tela de credenciamento, selecione o ponto correspondente: <strong>Entrada Geral</strong> ou a <strong>Oficina</strong> em que você está operando.</li>
+                    <li>Ao ler o QR Code único do participante, o sistema valida a matrícula específica dele na atividade. Se ele não estiver matriculado na oficina selecionada, o acesso será barrado.</li>
+                    <li>O check-in geral do participante não interfere na validação das oficinas e vice-versa, mantendo os registros individuais e independentes.</li>
                   </ul>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Users className="h-4.5 w-4.5 text-amber-400" />
+                    3. Busca Manual
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Caso a câmera do dispositivo apresente problemas ou o participante não tenha o QR Code em mãos, utilize o campo de busca manual no topo do leitor para localizar a inscrição por Nome ou CPF.
+                  </p>
                   <p className="text-xs text-slate-450">
-                    Basta clicar em <strong>&quot;Confirmar Presença&quot;</strong> na linha do participante correspondente após a validação física de sua identidade.
+                    Basta clicar em <strong>&quot;Confirmar Presença&quot;</strong> na linha do participante correspondente após a validação física de sua identidade. Se estiver operando uma oficina, o botão irá registrar presença especificamente naquela oficina.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Lock className="h-4.5 w-4.5 text-amber-400" />
-                    3. Operação Offline (PWA)
+                    4. Operação Offline (PWA)
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Se o local do evento estiver sem conexão à internet (ex: quadras de esporte ou locais distantes), instale o aplicativo em seu celular (PWA).
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
-                    Ao abrir a página do evento com internet antes de ir para o local, o aplicativo baixa os dados básicos dos participantes e salva localmente no banco do navegador (<strong>Dexie.js</strong>). A validação por câmera continuará funcionando offline!
+                    Ao abrir a página do evento com internet antes de ir para o local, o aplicativo baixa os dados básicos dos participantes (incluindo as oficinas matriculadas) e salva localmente no banco do navegador (<strong>Dexie.js</strong>). A validação por câmera continuará funcionando offline!
                   </p>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <CheckCircle2 className="h-4.5 w-4.5 text-amber-400" />
-                    4. Sincronização de Dados
+                    5. Sincronização de Dados
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Ao retornar a um local com sinal de internet, acesse a página de sincronização offline e clique no botão <strong>&quot;Sincronizar Check-ins&quot;</strong>. 
                   </p>
                   <p className="text-xs text-slate-450">
-                    O aplicativo enviará os check-ins realizados no local em lote para a API, que registrará as presenças de forma atômica no banco de dados central.
+                    O aplicativo enviará os check-ins realizados no local em lote para a API (identificando se pertencem à entrada geral ou a uma oficina específica), que registrará as presenças de forma atômica no banco de dados central.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Shield className="h-4.5 w-4.5 text-amber-400" />
-                    5. Higienização de Dados e Segurança
+                    6. Higienização de Dados e Segurança
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Graças à validação matemática de CPFs no cadastro e ao bloqueio de duplicidade, a lista de participantes para credenciamento está livre de CPFs falsos ou ingressos duplicados para uma mesma pessoa.
@@ -637,8 +696,24 @@ export default function ManualPage() {
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-slate-400" />
+                    2. Inscrição e Matrícula em Oficinas
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Se o evento possuir oficinas integradas (como o CONLUZ):
+                  </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li>Durante o preenchimento do formulário de inscrição, você poderá selecionar as oficinas das quais deseja participar.</li>
+                    <li>O sistema limitará sua escolha ao número máximo permitido de oficinas por inscrito.</li>
+                    <li>Você não poderá selecionar oficinas com horários conflitantes (sobrepostos).</li>
+                    <li>Caso as vagas de uma oficina acabem, você precisará escolher outra atividade com vagas em aberto.</li>
+                  </ul>
+                </div>
+
+                <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
+                  <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Users className="h-4.5 w-4.5 text-slate-400" />
-                    2. Fila de Espera
+                    3. Fila de Espera Geral
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Se o evento desejado estiver com todas as vagas esgotadas, você pode clicar em &quot;Inscrever-se na Fila de Espera&quot;. Caso algum participante desista, a fila é reprocessada automaticamente e você receberá uma confirmação de participação por e-mail caso sua vaga seja liberada.
@@ -648,36 +723,38 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <QrCode className="h-4.5 w-4.5 text-slate-400" />
-                    3. Ingresso Digital e Acesso ao Evento
+                    4. Ingresso Digital Único
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Ao confirmar sua vaga, o sistema gera um ingresso digital criptografado com QR Code. Apresente este ingresso (no celular ou impresso) no portão do evento para que o Checker realize a validação e libere sua entrada.
+                    Ao confirmar sua vaga, o sistema gera um ingresso digital criptografado com QR Code. Apresente este **único ingresso** no portão do evento para que o Checker realize a validação de entrada geral e também nas salas de oficinas que você escolheu.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <FileText className="h-4.5 w-4.5 text-slate-400" />
-                    4. Emissão de Certificados Digitais
+                    5. Emissão de Múltiplos Certificados
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Após a finalização do evento, se o seu check-in tiver sido confirmado pela equipe organizadora, o botão <strong>&quot;Emitir Certificado&quot;</strong> estará liberado na sua página de ingressos. 
                   </p>
-                  <p className="text-xs text-slate-450 leading-relaxed">
-                    O certificado é gerado em formato PDF de alta definição, assinado digitalmente pela instituição organizadora, e inclui um QR Code público para validação de autenticidade por terceiros.
-                  </p>
+                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                    <li>Você poderá emitir o **Certificado Geral** do evento principal se tiver feito o check-in na entrada.</li>
+                    <li>Poderá emitir também o **Certificado de Oficina** para cada oficina em que participou e teve a presença validada pela portaria específica.</li>
+                    <li>Cada certificado possui um código único e QR Code para validação pública de autenticidade.</li>
+                  </ul>
                 </div>
 
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Shield className="h-4.5 w-4.5 text-slate-400" />
-                    5. Validação de CPF e Limite de Vagas
+                    6. Validação de CPF e Limite de Vagas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Ao preencher a inscrição, seu CPF é validado matematicamente pelo sistema. Caso digite um CPF inválido, a inscrição será rejeitada com um alerta em tela.
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
-                    Cada CPF só pode ser inscrito uma vez em cada evento. Isso garante que as vagas de eventos concorridos sejam distribuídas de forma justa e honesta, impedindo que uma pessoa reserve múltiplas vagas sob o mesmo documento.
+                    Além disso, cada CPF só pode ser inscrito uma vez em cada evento. Isso garante que as vagas de eventos concorridos sejam distribuídas de forma justa e honesta, impedindo que uma pessoa reserve múltiplas vagas sob o mesmo documento.
                   </p>
                 </div>
               </div>

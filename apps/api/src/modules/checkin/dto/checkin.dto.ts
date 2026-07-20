@@ -12,6 +12,11 @@ export class ValidateQRCodeDto {
   @IsString()
   @IsOptional()
   deviceId?: string;
+
+  @ApiProperty({ description: 'ID opcional da oficina para check-in específico', required: false })
+  @IsString()
+  @IsOptional()
+  workshopId?: string;
 }
 
 export class OfflineCheckInDto {
@@ -39,6 +44,11 @@ export class OfflineCheckInDto {
   @IsString()
   @IsOptional()
   token?: string;
+
+  @ApiProperty({ description: 'ID opcional da oficina para check-in específico', required: false })
+  @IsString()
+  @IsOptional()
+  workshopId?: string;
 }
 
 export class SyncOfflineCheckInsDto {

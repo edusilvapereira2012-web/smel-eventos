@@ -308,7 +308,7 @@ export class RegistrationsService {
       throw new NotFoundException('Evento não encontrado no tenant.');
     }
 
-    const { status, search, cursor, limit } = query;
+    const { status, search, cursor, limit, checkedIn, certificateType, workshopId, customTitle } = query;
     const take = limit ? Math.min(Math.max(1, limit), 100) : 20;
 
     const where: any = { eventId };
@@ -324,8 +324,26 @@ export class RegistrationsService {
       ];
     }
 
+    if (checkedIn === 'true') {
+      where.checkedInAt = { not: null };
+    } else if (checkedIn === 'false') {
+      where.checkedInAt = null;
+    }
+
+    if (certificateType === 'WORKSHOP' && workshopId) {
+      where.workshopEnrollments = {
+        some: {
+          workshopId,
+        },
+      };
+    }
+
     const registrations = await this.prisma.registration.findMany({
       where,
+      include: {
+        certificates: true,
+        workshopEnrollments: true,
+      },
       take: take + 1,
       cursor: cursor ? { id: cursor } : undefined,
       skip: cursor ? 1 : 0,
@@ -338,18 +356,36 @@ export class RegistrationsService {
       nextCursor = nextItem!.id;
     }
 
-    // Mask CPFs
-    const mapped = registrations.map((reg) => {
+    const typeFilter = certificateType || 'EVENT';
+
+    // Mask CPFs and map correct certificate
+    const mapped = registrations.map((reg: any) => {
+      let matchingCert = null;
+      if (reg.certificates) {
+        matchingCert = reg.certificates.find((cert: any) => {
+          if (cert.type !== typeFilter) return false;
+          if (typeFilter === 'WORKSHOP') {
+            return cert.workshopId === workshopId;
+          }
+          if (typeFilter === 'CUSTOM') {
+            return cert.customTitle === customTitle;
+          }
+          return true;
+        });
+      }
+
       try {
         const decrypted = decrypt(reg.cpf || '', this.encryptionKey);
         return {
           ...reg,
           cpf: maskCpf(decrypted),
+          certificate: matchingCert || null,
         };
       } catch (err) {
         return {
           ...reg,
           cpf: '***.***.***-**',
+          certificate: matchingCert || null,
         };
       }
     });

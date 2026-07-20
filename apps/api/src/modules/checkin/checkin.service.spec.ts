@@ -31,6 +31,10 @@ describe('CheckInService', () => {
       create: jest.fn(),
       count: jest.fn(),
     },
+    workshopEnrollment: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn((callback) => callback(mockPrisma)),
   };
 
@@ -180,6 +184,64 @@ describe('CheckInService', () => {
       mockPrisma.registration.findUnique.mockResolvedValue(mockRegistration);
 
       await expect(service.validateAndCheckIn(token)).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('check-in de oficina válido → sucesso', async () => {
+      const token = 'valid_token';
+      const registrationId = 'reg-123';
+      const eventId = 'event-456';
+      const workshopId = 'ws-999';
+      const mockRegistration = {
+        id: registrationId,
+        eventId,
+        code: 'EVH-2026-00001',
+        name: 'John Doe',
+        status: RegistrationStatus.CONFIRMED,
+        checkIn: null,
+        event: { tenantId: 'tenant-123' },
+      };
+      const mockEnrollment = {
+        id: 'enroll-1',
+        registrationId,
+        workshopId,
+        checkedInAt: null,
+        workshop: { title: 'Workshop React' },
+      };
+
+      jwtService.verify.mockReturnValue({ sub: registrationId, eventId });
+      redisService.get.mockResolvedValue(null);
+      mockPrisma.registration.findUnique.mockResolvedValue(mockRegistration);
+      mockPrisma.workshopEnrollment.findUnique.mockResolvedValue(mockEnrollment);
+      mockPrisma.workshopEnrollment.update.mockResolvedValue({ ...mockEnrollment, checkedInAt: new Date() });
+
+      const result = await service.validateAndCheckIn(token, 'op-1', 'dev-1', workshopId);
+
+      expect(result.success).toBe(true);
+      expect(result.registration.workshopTitle).toBe('Workshop React');
+      expect(mockPrisma.workshopEnrollment.update).toHaveBeenCalled();
+    });
+
+    it('check-in de oficina não matriculado → 422', async () => {
+      const token = 'valid_token';
+      const registrationId = 'reg-123';
+      const eventId = 'event-456';
+      const workshopId = 'ws-999';
+      const mockRegistration = {
+        id: registrationId,
+        eventId,
+        code: 'EVH-2026-00001',
+        name: 'John Doe',
+        status: RegistrationStatus.CONFIRMED,
+        checkIn: null,
+        event: { tenantId: 'tenant-123' },
+      };
+
+      jwtService.verify.mockReturnValue({ sub: registrationId, eventId });
+      redisService.get.mockResolvedValue(null);
+      mockPrisma.registration.findUnique.mockResolvedValue(mockRegistration);
+      mockPrisma.workshopEnrollment.findUnique.mockResolvedValue(null);
+
+      await expect(service.validateAndCheckIn(token, 'op-1', 'dev-1', workshopId)).rejects.toThrow(UnprocessableEntityException);
     });
   });
 

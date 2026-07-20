@@ -210,8 +210,20 @@ export default function CertificateEditor({
     }
   };
 
-  // Resolução de variáveis de preview do corpo
-  const formattedDate = new Date(eventDate).toLocaleDateString('pt-BR');
+  // Resolução de variáveis de preview do corpo sem deslocamento de fuso horário
+  const getSafeFormattedDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    if (datePart.includes('-')) {
+      const parts = datePart.split('-');
+      if (parts[0].length === 4) {
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
+      }
+    }
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+  };
+  const formattedDate = getSafeFormattedDate(eventDate);
   const getBodyPreviewText = () => {
     return 'Certificamos que Nome do Participante (Exemplo) participou com êxito do evento ' + 
       eventTitle + ', realizado em ' + formattedDate + ', com carga horária total de ' + eventHours + ' horas.';

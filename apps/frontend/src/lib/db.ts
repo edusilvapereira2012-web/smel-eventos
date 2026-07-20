@@ -9,6 +9,7 @@ export interface PendingCheckIn {
   code: string;
   deviceId: string;
   token?: string;
+  workshopId?: string;
 }
 
 export interface ConfirmedRegistration {
@@ -18,6 +19,8 @@ export interface ConfirmedRegistration {
   email: string;
   eventId: string;
   checkedInAt?: string | null;
+  workshopEnrollments?: string[];
+  workshopCheckins?: Record<string, string>;
 }
 
 export class CheckInDatabase extends Dexie {
@@ -26,8 +29,8 @@ export class CheckInDatabase extends Dexie {
 
   constructor() {
     super('CheckInDatabase');
-    this.version(1).stores({
-      pendingCheckins: '++id, registrationId, eventId, checkedInAt',
+    this.version(2).stores({
+      pendingCheckins: '++id, registrationId, eventId, checkedInAt, workshopId',
       confirmedRegistrations: 'id, name, code, email, eventId',
     });
   }
