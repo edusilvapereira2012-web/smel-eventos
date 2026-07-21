@@ -96,14 +96,14 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 ### 3.5. QR Code, Check-in e Scanner Offline (Leva 06 / Leva 14)
 * **Assinatura Criptográfica**: Ingressos emitidos no formato de token JWT assinado (`QR_SECRET`) contendo identificadores essenciais.
 * **Antiduplicidade**: Validação estrita contra múltiplos check-ins para o mesmo ingresso (retorna `409 Conflict` se já inserido).
-* **Check-in por Ponto / Oficinas**: O operador de portaria pode selecionar se o ponto de entrada é para o "Evento Principal" ou para uma "Oficina específica". O sistema valida a matrícula do participante na oficina selecionada e registra o check-in isolado na oficina (evitando duplicidades).
+* **Check-in por Ponto / Atividades / Oficinas**: O operador de portaria pode selecionar se o ponto de entrada é para o "Evento Principal" ou para uma "Atividade / Oficina específica". O sistema valida a matrícula do participante na atividade/oficina selecionada e registra o check-in isolado na atividade/oficina (evitando duplicidades).
 * **Sincronização Offline**:
-  * Operação offline via PWA móvel utilizando **Dexie.js** (IndexedDB) para cachear ingressos válidos (incluindo mapeamento de matrículas e presença nas oficinas) e reter check-ins efetuados localmente.
+  * Operação offline via PWA móvel utilizando **Dexie.js** (IndexedDB) para cachear ingressos válidos (incluindo mapeamento de matrículas e presença nas atividades/oficinas) e reter check-ins efetuados localmente.
   * Sincronização em lote (`POST /api/checkin/sync`) com suporte a `workshopId` para processamento individualizado e transações atômicas das presenças coletadas sem rede.
 
 ### 3.6. Certificados Digitais e Layouts Dinâmicos (Leva 07 / Leva 14)
 * **Modelos Externos e Customização**: Suporte à importação de modelos de layout externos configurados via painel administrativo. Cada organização/evento pode carregar uma imagem de fundo (background) customizada (`certificateLayoutUrl`) e um esquema de mapeamento de texto em formato JSON (`certificateLayoutJson`) contendo coordenadas (X, Y), tamanhos de fonte, alinhamentos e cores dos textos dinâmicos (Nome do Participante, Título do Evento, Carga Horária, Data e Código de Validação).
-* **Emissão Específica e Dinâmica**: Permite a emissão e geração de certificados tanto para o Evento Principal (Entrada Geral) quanto para oficinas específicas do evento (ex: Oficinas, Mesas Redondas).
+* **Emissão Específica e Dinâmica**: Permite a emissão e geração de certificados tanto para o Evento Principal (Entrada Geral) quanto para atividades/oficinas específicas do evento (ex: Abertura, Mesa Redonda, Oficinas).
 * **Geração de PDF**: Processador de fila que renderiza o layout A4 paisagem dinamicamente. Se houver layout customizado, carrega a imagem externa como plano de fundo e posiciona os dados sobrepostos usando as coordenadas especificadas; caso contrário, utiliza o modelo institucional padrão da plataforma. Adiciona assinatura digital institucional, logotipo e QR Code vetorial público de validação.
 * **Envio em Lote e Individual**: O painel administrativo permite emitir e enviar por e-mail os certificados individualmente ou em lote para todos os participantes que registraram presença.
 * **Fila BullMQ**: Processamento assíncrono em segundo plano para evitar gargalos na API.
@@ -120,11 +120,11 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Cache de Métricas**: Indicadores de visão geral da organização cacheados no Redis com TTL de 5 minutos.
 * **Feeds em Tempo Real**: Websocket (`Socket.io`) estruturado por namespaces por Tenant (`/tenant-{tenantId}`) que envia transmissões imediatas de novos check-ins e alterações de inscrições para atualização dinâmica dos painéis sem refresh.
 
-### 3.9. Gestão de Oficinas e Palestrantes (Leva 12)
-* **Modelagem de Dados**: Entidades relacionais `Workshop` (capacidade, horários de início e término, local, limite de vagas e palestrantes associados) e `WorkshopEnrollment` (vínculo de inscrições).
+### 3.9. Gestão de Atividades / Oficinas e Palestrantes (Leva 12)
+* **Modelagem de Dados**: Entidades relacionais `Workshop` (capacidade, horários de início e término, local, limite de vagas e palestrantes associados) e `WorkshopEnrollment` (vínculo de inscrições). Representadas visualmente como Atividades / Oficinas.
 * **Concorrência e Vagas (Pessimistic Locking)**: Uso de travas pessimistas (`FOR UPDATE` na tabela `Workshop` durante a transação) para evitar condições de corrida (race conditions) e *overbooking* de vagas em inscrições simultâneas.
-* **Detecção de Conflitos de Horário**: Validação automática e em tempo real que impede que um mesmo participante se inscreva em oficinas cujos horários se sobreponham (mesmo dia e horário de realização).
-* **Ativação Dinâmica**: Arquitetura desacoplada e agnóstica; a funcionalidade de oficinas e palestrantes é ativada de forma transparente para qualquer evento cujo limite máximo de oficinas por participante (`maxWorkshops`) seja configurado com valor maior que zero.
+* **Detecção de Conflitos de Horário**: Validação automática e em tempo real que impede que um mesmo participante se inscreva em atividades/oficinas cujos horários se sobreponham (mesmo dia e horário de realização).
+* **Ativação Dinâmica**: Arquitetura desacoplada e agnóstica; a funcionalidade de atividades/oficinas e palestrantes é ativada de forma transparente para qualquer evento cujo limite máximo de atividades/oficinas por participante (`maxWorkshops`) seja configurado com valor maior que zero.
 
 ### 3.10. Padronização de Nomes e Campos Obrigatórios (Leva 13)
 * **Padronização em UPPERCASE**: Conversão automática de nomes dos participantes para letras maiúsculas tanto no frontend (ao digitar e na submissão) quanto no backend (como regra de integridade final na API antes de persistir no banco de dados).
@@ -197,12 +197,12 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Inscrições Extra-Ingresso (Inscrições na Hora)**:
   * Permite que operadores e organizadores realizem inscrições diretamente no local/dia do evento via painel administrativo (`POST /api/events/:id/extra-registration`).
   * O fluxo exige Nome, E-mail, CPF (com validação matemática e de duplicidade por blind index) e Telefone (obrigatório).
-  * Permite selecionar as oficinas/atividades que o participante deseja frequentar, contanto que haja vagas remanescentes.
+  * Permite selecionar as atividades/oficinas que o participante deseja frequentar, contanto que haja vagas remanescentes.
   * O sistema utiliza locks pessimistas (`SELECT FOR UPDATE`) para garantir integridade e evitar overbooking sob concorrência intensa de portaria.
   * O participante inscrito recebe imediatamente o e-mail de confirmação com seu QR Code de acesso.
-* **Transferência de Oficinas**:
-  * Permite mover um participante de uma oficina para outra dentro do mesmo evento (`POST /api/registrations/:registrationId/transfer-workshop`), liberando a vaga da oficina de origem e ocupando a vaga na oficina de destino.
-  * Exige que a inscrição de origem esteja ativa (`CONFIRMED`), que a oficina de destino possua vagas livres e que não ocorra sobreposição de horários com outras atividades em que o participante esteja matriculado.
+* **Transferência de Atividades / Oficinas**:
+  * Permite mover um participante de uma atividade/oficina para outra dentro do mesmo evento (`POST /api/registrations/:registrationId/transfer-workshop`), liberando a vaga de origem e ocupando a vaga na de destino.
+  * Exige que a inscrição de origem esteja ativa (`CONFIRMED`), que a de destino possua vagas livres e que não ocorra sobreposição de horários com outras atividades em que o participante esteja matriculado.
   * O processo é realizado em uma única transação atômica do banco com locks de linha para proteção de concorrência.
 
 ### 3.13. Notificações Premium e Modais de Confirmação Customizados (Leva 15)

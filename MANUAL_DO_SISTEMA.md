@@ -100,42 +100,42 @@ A plataforma **não possui uma área restrita (com login/senha)** voltada para o
 
 ---
 
-## 5. Gestão de Oficinas (CONLUZ e Outros Eventos)
+## 5. Gestão de Atividades / Oficinas (CONLUZ e Outros Eventos)
 
-A plataforma conta com um sistema flexível e dinâmico para gerenciar eventos que possuem oficinas integradas (como o CONLUZ).
+A plataforma conta com um sistema flexível e dinâmico para gerenciar eventos que possuem atividades ou oficinas integradas (como o CONLUZ).
 
-### 5.1. Como Ativar o Recurso de Oficinas
-Para que um evento exiba o fluxo de oficinas e palestrantes, faça o seguinte no Painel Administrativo:
+### 5.1. Como Ativar o Recurso de Atividades / Oficinas
+Para que um evento exiba o fluxo de atividades/oficinas e palestrantes, faça o seguinte no Painel Administrativo:
 1. Acesse a edição do evento ou crie um novo evento.
-2. Defina o campo **"Limite de Oficinas por Participante"** (`maxWorkshops`) com um número maior que zero (ex: `2`).
-3. Salve o evento. O sistema ativará automaticamente as abas de gerenciamento de oficinas e palestrantes na administração do evento e no formulário público.
+2. Defina o campo **"Limite de Atividades / Oficinas por Participante"** (`maxWorkshops`) com um número maior que zero (ex: `2`).
+3. Salve o evento. O sistema ativará automaticamente as abas de gerenciamento de atividades/oficinas e palestrantes na administração do evento e no formulário público.
 
-### 5.2. Como Cadastrar Oficinas e Palestrantes
+### 5.2. Como Cadastrar Atividades / Oficinas e Palestrantes
 No menu do evento correspondente:
-1. **Palestrantes**: Cadastre os palestrantes que conduzirão as oficinas (Nome, Foto, Biografia/Cargo).
-2. **Oficinas**: Cadastre cada oficina preenchendo:
-   * **Título** e **Descrição** da oficina.
+1. **Palestrantes**: Cadastre os palestrantes que conduzirão as atividades/oficinas (Nome, Foto, Biografia/Cargo).
+2. **Atividades / Oficinas**: Cadastre cada atividade ou oficina preenchendo:
+   * **Título** e **Descrição** da atividade/oficina.
    * **Capacidade de Vagas** (o limite rígido do espaço físico/virtual).
    * **Data e Horário (Início e Fim)**: O período exato de realização.
    * **Palestrantes**: Associe os palestrantes cadastrados anteriormente.
 
 ### 5.3. Validações e Prevenção de Conflitos (Público)
 No momento em que o participante preenche a inscrição do evento:
-* **Limite Máximo**: O participante só pode marcar até o número de oficinas definido em `maxWorkshops`.
-* **Conflito de Horário**: O formulário impede a seleção de oficinas que aconteçam simultaneamente (sobreposição de horário no mesmo dia).
-* **Bloqueio de Overbooking**: O sistema realiza transações com travas pessimistas (*Pessimistic Locking*). Se duas pessoas tentarem se inscrever na última vaga da mesma oficina ao mesmo tempo, apenas a primeira a concluir terá a vaga confirmada; a segunda receberá um aviso amigável de "Vagas Esgotadas".
+* **Limite Máximo**: O participante só pode marcar até o número de atividades/oficinas definido em `maxWorkshops`.
+* **Conflito de Horário**: O formulário impede a seleção de atividades/oficinas que aconteçam simultaneamente (sobreposição de horário no mesmo dia).
+* **Bloqueio de Overbooking**: O sistema realiza transações com travas pessimistas (*Pessimistic Locking*). Se duas pessoas tentarem se inscrever na última vaga da mesma atividade/oficina ao mesmo tempo, apenas a primeira a concluir terá a vaga confirmada; a segunda receberá um aviso amigável de "Vagas Esgotadas".
 
 ### 5.4. Gestão Administrativa de Inscritos
-Na área de administração do evento, em **Oficinas**:
-* É possível listar todos os participantes inscritos em cada oficina específica.
-* O organizador pode remover/cancelar administrativamente a inscrição de um participante em uma oficina individual, liberando a vaga instantaneamente para novos cadastros.
+Na área de administração do evento, em **Atividades / Oficinas**:
+* É possível listar todos os participantes inscritos em cada atividade/oficina específica.
+* O organizador pode remover/cancelar administrativamente a inscrição de um participante em uma atividade/oficina individual, liberando a vaga instantaneamente para novos cadastros.
 
-### 5.5. Controle de Check-in em Portaria por Oficinas (Online & Offline)
+### 5.5. Controle de Check-in em Portaria por Atividades / Oficinas (Online & Offline)
 No dia do evento, a equipe de recepção utiliza a tela de credenciamento (`/checkin/[eventId]`):
-* **Seletor de Ponto de Acesso**: No topo do painel, há um seletor para definir se o controle é para a "Entrada Geral (Evento Principal)" ou para uma "Oficina específica".
-* **Identificação via QR Code Único**: O participante apresenta um único QR Code. Se o operador estiver controlando uma oficina:
-  * O sistema verifica se o inscrito está matriculado naquela oficina. Se não estiver, barra o acesso.
-  * O check-in é registrado de forma isolada para aquela oficina, permitindo que a entrada geral e as demais oficinas permaneçam independentes.
+* **Seletor de Ponto de Acesso**: No topo do painel, há um seletor para definir se o controle é para a "Entrada Geral (Evento Principal)" ou para uma "Atividade / Oficina específica".
+* **Identificação via QR Code Único**: O participante apresenta um único QR Code. Se o operador estiver controlando uma atividade/oficina:
+  * O sistema verifica se o inscrito está matriculado naquela atividade/oficina. Se não estiver, barra o acesso.
+  * O check-in é registrado de forma isolada para aquela atividade/oficina, permitindo que a entrada geral e as demais atividades/oficinas permaneçam independentes.
 * **Busca Manual e Fila Offline**: Se a recepção estiver sem sinal, a lista local do PWA valida as matrículas e guarda o check-in na fila do IndexedDB para envio automático assim que a rede retornar.
 
 ---
@@ -223,9 +223,9 @@ Os eventos contam com a integração de localização geográfica para facilitar
 
 A plataforma possui um sistema avançado de geração, personalização e emissão de certificados digitais de participação.
 
-### 12.1. Como Funciona a Emissão Dinâmica (Evento vs Oficinas)
+### 12.1. Como Funciona a Emissão Dinâmica (Evento vs Atividades / Oficinas)
 * **Certificado do Evento Principal**: Emitido para os participantes que realizaram o check-in geral na entrada do evento.
-* **Certificado de Oficinas/Mesas Redondas**: Emitido individualmente para cada oficina em que o participante estava matriculado e registrou presença (check-in específico da oficina). O certificado gerado dinamicamente exibe o título da oficina correspondente e sua carga horária.
+* **Certificado de Atividades / Oficinas**: Emitido individualmente para cada atividade ou oficina em que o participante estava matriculado e registrou presença (check-in específico dela). O certificado gerado dinamicamente exibe o título correspondente da atividade/oficina e sua carga horária.
 * **Validação do Link**: Cada certificado possui um código validador único (ex: hash alfa-numérico) impresso no rodapé e um QR Code público que direciona para a página `/certificate/[codigo]`, exibindo instantaneamente a folha de autenticidade em PDF.
 
 ### 12.2. Utilizando Modelos de Layout Externos (Upload de Imagem & JSON)
@@ -241,29 +241,29 @@ Se o criador do evento quiser utilizar uma arte própria externa de certificado 
 
 ### 12.3. Emissão em Lote
 O organizador do evento pode optar por emitir os certificados de todos os participantes presentes de uma única vez:
-* No painel do evento, clique em **Emitir em Lote** (geral ou por oficina específica).
+* No painel do evento, clique em **Emitir em Lote** (geral ou por atividade/oficina específica).
 * O sistema enfileira o envio assíncrono para a fila BullMQ. Cada participante receberá em seu e-mail cadastrado o link de acesso direto e o certificado em anexo.
 
 ---
 
 ## 13. Inscrições Extra-Ingressos e Transferências na Hora do Evento
 
-A plataforma permite que a equipe organizadora realize inscrições e transferências na hora (direto no local do evento) para atender a demandas de credenciamento imediato e flexibilidade de oficinas.
+A plataforma permite que a equipe organizadora realize inscrições e transferências na hora (direto no local do evento) para atender a demandas de credenciamento imediato e flexibilidade de atividades/oficinas.
 
 ### 13.1. Inscrições Extra-Ingressos (Inscrição na Hora)
-* **Objetivo**: Inscrever participantes no dia do evento que não realizaram cadastro prévio online, permitindo inseri-los no evento principal e em oficinas com vagas remanescentes.
+* **Objetivo**: Inscrever participantes no dia do evento que não realizaram cadastro prévio online, permitindo inseri-los no evento principal e em atividades/oficinas com vagas remanescentes.
 * **Como realizar**:
   1. No painel de administração do evento, clique no botão **"Inscrição Extra-Ingresso"** no topo da lista de inscritos.
   2. Preencha os dados obrigatórios do participante: Nome Completo (convertido automaticamente para UPPERCASE), E-mail, CPF (validação de formato e duplicidade) e Telefone (obrigatório com DDD).
-  3. No seletor de oficinas, marque as oficinas em que o participante deseja se matricular. O sistema exibirá apenas as oficinas que possuírem vagas restantes no momento.
+  3. No seletor de atividades/oficinas, marque as opções em que o participante deseja se matricular. O sistema exibirá apenas as atividades/oficinas que possuírem vagas restantes no momento.
   4. Clique em **"Confirmar Inscrição"**. O participante terá seu ingresso digital gerado e enviado por e-mail automaticamente.
 
-### 13.2. Transferências de Ingressos (Troca de Oficina)
-* **Objetivo**: Transferir um participante de uma oficina para outra no momento do credenciamento, caso ele desista de uma atividade ou queira preencher vagas abertas de última hora.
+### 13.2. Transferências de Ingressos (Troca de Atividade / Oficina)
+* **Objetivo**: Transferir um participante de uma atividade/oficina para outra no momento do credenciamento, caso ele desista de uma atividade ou queira preencher vagas abertas de última hora.
 * **Como realizar**:
   1. Na listagem de inscritos do evento, localize o participante desejado.
-  2. Clique no botão **"Transferir"** na linha do participante.
-  3. No modal de transferência, selecione a oficina de destino desejada. O painel omitirá oficinas cheias ou que entrem em conflito de horário com as demais atividades em que o participante já esteja inscrito.
+  2. Clique no botão **"Transferir"** (na coluna Atividades / Oficinas) na linha do participante.
+  3. No modal de transferência, selecione a atividade/oficina de destino desejada. O painel omitirá opções cheias ou que entrem em conflito de horário com as demais atividades em que o participante já esteja inscrito.
   4. Confirme a transferência. O sistema fará a permuta de vagas em uma transação segura e atômica.
 
 ---
