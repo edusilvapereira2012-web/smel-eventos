@@ -204,6 +204,10 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
   * Permite mover um participante de uma atividade/oficina para outra dentro do mesmo evento (`POST /api/registrations/:registrationId/transfer-workshop`), liberando a vaga de origem e ocupando a vaga na de destino.
   * Exige que a inscrição de origem esteja ativa (`CONFIRMED`), que a de destino possua vagas livres e que não ocorra sobreposição de horários com outras atividades em que o participante esteja matriculado.
   * O processo é realizado em uma única transação atômica do banco com locks de linha para proteção de concorrência.
+* **Exportação de Lista de Presença Específica em PDF**:
+  * O endpoint `GET /api/reports/events/:eventId/presence-list` suporta um parâmetro opcional de query `workshopId`.
+  * Se fornecido, a listagem do PDF é filtrada para incluir apenas participantes confirmados e matriculados na atividade/oficina correspondente.
+  * O PDF resultante exibe o título da atividade/oficina no cabeçalho e adiciona as linhas de assinatura física específicas para o controle de presença em sala.
 
 ### 3.13. Notificações Premium e Modais de Confirmação Customizados (Leva 15)
 * **Notificações Premium (Toasts)**:

@@ -266,6 +266,13 @@ A plataforma permite que a equipe organizadora realize inscrições e transferê
   3. No modal de transferência, selecione a atividade/oficina de destino desejada. O painel omitirá opções cheias ou que entrem em conflito de horário com as demais atividades em que o participante já esteja inscrito.
   4. Confirme a transferência. O sistema fará a permuta de vagas em uma transação segura e atômica.
 
+### 13.3. Exportação de Lista de Presença Específica em PDF
+* **Objetivo**: Obter uma lista impressa de assinaturas para controle físico de participantes presentes especificamente em uma atividade ou oficina.
+* **Como realizar**:
+  1. No painel de administração do evento, sob a aba **"Atividades / Oficinas"**, clique no título da atividade desejada para visualizar o drawer com os participantes matriculados.
+  2. No canto superior direito do drawer de participantes, clique no botão **"Lista (PDF)"**.
+  3. O sistema gerará um arquivo PDF contendo o nome do evento, o título da atividade e a lista de inscritos ordenada alfabeticamente com linhas dedicadas para assinatura física.
+
 ---
 
 ## 14. Sistema de Notificações e Confirmações Premium
