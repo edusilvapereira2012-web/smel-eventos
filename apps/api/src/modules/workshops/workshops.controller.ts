@@ -106,6 +106,28 @@ export class WorkshopsController {
     );
   }
 
+  @Post(':id/enrollments/:registrationId/transfer')
+  @RequirePermission('events.update')
+  transferParticipant(
+    @Param('eventId') eventId: string,
+    @Param('id') id: string,
+    @Param('registrationId') registrationId: string,
+    @Body('toWorkshopId') toWorkshopId: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Req() req: any,
+  ) {
+    return this.workshopsService.transferParticipant(
+      eventId,
+      registrationId,
+      id,
+      toWorkshopId,
+      tenantId,
+      req.user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
   @Delete(':id/enrollments/:registrationId')
   @RequirePermission('events.update')
   cancelParticipantEnrollment(

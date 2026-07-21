@@ -237,4 +237,84 @@ describe('WorkshopsService', () => {
       );
     });
   });
+
+  describe('transferParticipant', () => {
+    it('should transfer a participant successfully inside transaction', async () => {
+      const mockTx = {
+        event: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'event-1' }),
+        },
+        registration: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'reg-1', eventId: 'event-1', status: 'CONFIRMED' }),
+        },
+        workshopEnrollment: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'enc-1', registrationId: 'reg-1', workshopId: 'w-1' }),
+          count: jest.fn().mockResolvedValue(10), // capacity check
+          findMany: jest.fn().mockResolvedValue([]), // conflict check
+          delete: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({ id: 'enc-2', registrationId: 'reg-1', workshopId: 'w-2' }),
+        },
+        $queryRaw: jest.fn().mockResolvedValue([{
+          id: 'w-2',
+          title: 'Oficina 2',
+          capacity: 30,
+          startTime: '2026-10-01T16:00:00Z',
+          endTime: '2026-10-01T18:00:00Z',
+        }]),
+      };
+
+      mockPrisma.event.findFirst.mockResolvedValue({ id: 'event-1' });
+      mockPrisma.$transaction.mockImplementation(async (cb) => cb(mockTx));
+
+      const result = await service.transferParticipant('event-1', 'reg-1', 'w-1', 'w-2', 'tenant-1', 'user-1');
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe('enc-2');
+      expect(mockTx.workshopEnrollment.delete).toHaveBeenCalled();
+      expect(mockTx.workshopEnrollment.create).toHaveBeenCalledWith({
+        data: {
+          registrationId: 'reg-1',
+          workshopId: 'w-2',
+        },
+      });
+      expect(mockAuditLog.log).toHaveBeenCalledWith(
+        'user-1',
+        'TRANSFER_WORKSHOP_ENROLLMENT',
+        'workshop_enrollment',
+        'enc-2',
+        { eventId: 'event-1', registrationId: 'reg-1', fromWorkshopId: 'w-1', toWorkshopId: 'w-2' },
+        undefined,
+        undefined,
+      );
+    });
+
+    it('should throw BadRequestException if workshops are the same', async () => {
+      mockPrisma.event.findFirst.mockResolvedValue({ id: 'event-1' });
+
+      await expect(service.transferParticipant('event-1', 'reg-1', 'w-1', 'w-1', 'tenant-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw NotFoundException if current enrollment does not exist', async () => {
+      const mockTx = {
+        event: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'event-1' }),
+        },
+        registration: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'reg-1', eventId: 'event-1', status: 'CONFIRMED' }),
+        },
+        workshopEnrollment: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrisma.event.findFirst.mockResolvedValue({ id: 'event-1' });
+      mockPrisma.$transaction.mockImplementation(async (cb) => cb(mockTx));
+
+      await expect(service.transferParticipant('event-1', 'reg-1', 'w-1', 'w-2', 'tenant-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

@@ -342,7 +342,19 @@ export class RegistrationsService {
       where,
       include: {
         certificates: true,
-        workshopEnrollments: true,
+        workshopEnrollments: {
+          include: {
+            workshop: {
+              select: {
+                id: true,
+                title: true,
+                startTime: true,
+                endTime: true,
+                location: true,
+              },
+            },
+          },
+        },
       },
       take: take + 1,
       cursor: cursor ? { id: cursor } : undefined,
@@ -448,6 +460,21 @@ export class RegistrationsService {
 
     const registration = await this.prisma.registration.findFirst({
       where: { id, eventId },
+      include: {
+        workshopEnrollments: {
+          include: {
+            workshop: {
+              select: {
+                id: true,
+                title: true,
+                startTime: true,
+                endTime: true,
+                location: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!registration) {

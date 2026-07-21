@@ -394,4 +394,129 @@ export class WorkshopsService {
 
     return { success: true };
   }
+
+  async transferParticipant(
+    eventId: string,
+    registrationId: string,
+    fromWorkshopId: string,
+    toWorkshopId: string,
+    tenantId: string,
+    userId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    await this.checkEventOwner(eventId, tenantId);
+
+    if (fromWorkshopId === toWorkshopId) {
+      throw new BadRequestException('As oficinas de origem e destino devem ser diferentes.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Lock Event
+      const event = await tx.event.findUnique({
+        where: { id: eventId },
+      });
+      if (!event) throw new NotFoundException('Evento não encontrado.');
+
+      // 2. Fetch and check registration status
+      const registration = await tx.registration.findUnique({
+        where: { id: registrationId },
+      });
+      if (!registration || registration.eventId !== eventId) {
+        throw new NotFoundException('Inscrição no evento não encontrada.');
+      }
+      if (registration.status !== 'CONFIRMED') {
+        throw new BadRequestException('Apenas participantes com inscrição confirmada podem gerenciar oficinas.');
+      }
+
+      // 3. Find current enrollment to transfer from
+      const currentEnrollment = await tx.workshopEnrollment.findUnique({
+        where: {
+          registrationId_workshopId: {
+            registrationId,
+            workshopId: fromWorkshopId,
+          },
+        },
+      });
+      if (!currentEnrollment) {
+        throw new NotFoundException('Inscrição na oficina de origem não encontrada.');
+      }
+
+      // 4. Lock destination Workshop
+      const workshopsLocked: any[] = await tx.$queryRaw`
+        SELECT id, title, capacity, "startTime", "endTime" 
+        FROM "Workshop" 
+        WHERE id = ${toWorkshopId} AND "eventId" = ${eventId}
+        FOR UPDATE
+      `;
+      if (workshopsLocked.length === 0) {
+        throw new NotFoundException('Oficina de destino não encontrada.');
+      }
+      const toWorkshop = workshopsLocked[0];
+
+      // 5. Check capacity of destination workshop
+      const currentEnrollmentsCount = await tx.workshopEnrollment.count({
+        where: { workshopId: toWorkshopId },
+      });
+      if (currentEnrollmentsCount >= toWorkshop.capacity) {
+        throw new BadRequestException(`Vagas esgotadas para a oficina de destino "${toWorkshop.title}".`);
+      }
+
+      // 6. Check for schedule conflicts (excluding the one we are transferring from)
+      const existingEnrollments = await tx.workshopEnrollment.findMany({
+        where: {
+          registrationId,
+          workshop: { eventId },
+          NOT: { workshopId: fromWorkshopId },
+        },
+        include: { workshop: true },
+      });
+
+      const toStartTime = new Date(toWorkshop.startTime).getTime();
+      const toEndTime = new Date(toWorkshop.endTime).getTime();
+
+      for (const enc of existingEnrollments) {
+        const activeW = enc.workshop;
+        const activeStartTime = new Date(activeW.startTime).getTime();
+        const activeEndTime = new Date(activeW.endTime).getTime();
+
+        if (activeStartTime < toEndTime && toStartTime < activeEndTime) {
+          throw new BadRequestException(
+            `Conflito de horário: a oficina de destino conflita com a oficina "${activeW.title}" (${new Date(
+              activeW.startTime,
+            ).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${new Date(
+              activeW.endTime,
+            ).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}).`,
+          );
+        }
+      }
+
+      // 7. Delete old enrollment
+      await tx.workshopEnrollment.delete({
+        where: { id: currentEnrollment.id },
+      });
+
+      // 8. Create new enrollment
+      const newEnrollment = await tx.workshopEnrollment.create({
+        data: {
+          registrationId,
+          workshopId: toWorkshopId,
+        },
+      });
+
+      if (userId) {
+        await this.auditLog.log(
+          userId,
+          'TRANSFER_WORKSHOP_ENROLLMENT',
+          'workshop_enrollment',
+          newEnrollment.id,
+          { eventId, registrationId, fromWorkshopId, toWorkshopId },
+          ip,
+          userAgent,
+        );
+      }
+
+      return newEnrollment;
+    });
+  }
 }

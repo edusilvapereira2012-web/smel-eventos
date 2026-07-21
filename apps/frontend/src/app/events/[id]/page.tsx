@@ -39,6 +39,7 @@ import {
   Upload,
   Users,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -209,6 +210,15 @@ export default function EventDetailPage() {
   const [cancelRegSubmitting, setCancelRegSubmitting] = useState(false);
   const [cancelRegError, setCancelRegError] = useState<string | null>(null);
 
+  // --- MANAGE PARTICIPANT WORKSHOPS STATES ---
+  const [participantWorkshopsModalOpen, setParticipantWorkshopsModalOpen] = useState(false);
+  const [selectedParticipantReg, setSelectedParticipantReg] = useState<any | null>(null);
+  const [managingWorkshopsLoading, setManagingWorkshopsLoading] = useState(false);
+  const [managingWorkshopsError, setManagingWorkshopsError] = useState<string | null>(null);
+  const [showTransferSelectForId, setShowTransferSelectForId] = useState<string | null>(null);
+  const [transferDestinationId, setTransferDestinationId] = useState<string>('');
+
+
   // CPF / Phone masks for transfer form
   const handleTransferCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
@@ -372,6 +382,75 @@ export default function EventDetailPage() {
       setCancelRegError(err.response?.data?.message || 'Erro ao cancelar inscrição.');
     } finally {
       setCancelRegSubmitting(false);
+    }
+  };
+
+  const refreshParticipantData = async (regId: string) => {
+    try {
+      setManagingWorkshopsLoading(true);
+      const res = await api.get(`/events/${eventId}/registrations/${regId}`);
+      setSelectedParticipantReg(res.data);
+      const workRes = await api.get(`/events/${eventId}/workshops`);
+      setWorkshops(workRes.data);
+      loadRegistrations(true);
+    } catch (err: any) {
+      setManagingWorkshopsError(err.response?.data?.message || 'Falha ao atualizar dados do participante.');
+    } finally {
+      setManagingWorkshopsLoading(false);
+    }
+  };
+
+  const handleEnrollWorkshop = async (workshopId: string) => {
+    if (!selectedParticipantReg) return;
+    try {
+      setManagingWorkshopsLoading(true);
+      setManagingWorkshopsError(null);
+      await api.post(`/events/${eventId}/workshops/${workshopId}/enrollments/${selectedParticipantReg.id}`);
+      await refreshParticipantData(selectedParticipantReg.id);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Erro ao realizar inscrição na oficina.';
+      setManagingWorkshopsError(Array.isArray(msg) ? msg.join('. ') : msg);
+    } finally {
+      setManagingWorkshopsLoading(false);
+    }
+  };
+
+  const handleCancelWorkshopEnrollment = async (workshopId: string) => {
+    if (!selectedParticipantReg) return;
+    if (!confirm('Tem certeza que deseja cancelar a inscrição nesta oficina?')) return;
+    try {
+      setManagingWorkshopsLoading(true);
+      setManagingWorkshopsError(null);
+      await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${selectedParticipantReg.id}`);
+      await refreshParticipantData(selectedParticipantReg.id);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Erro ao cancelar inscrição na oficina.';
+      setManagingWorkshopsError(Array.isArray(msg) ? msg.join('. ') : msg);
+    } finally {
+      setManagingWorkshopsLoading(false);
+    }
+  };
+
+  const handleTransferWorkshop = async (fromWorkshopId: string, toWorkshopId: string) => {
+    if (!selectedParticipantReg) return;
+    if (!toWorkshopId) {
+      setManagingWorkshopsError('Selecione uma oficina de destino.');
+      return;
+    }
+    try {
+      setManagingWorkshopsLoading(true);
+      setManagingWorkshopsError(null);
+      await api.post(`/events/${eventId}/workshops/${fromWorkshopId}/enrollments/${selectedParticipantReg.id}/transfer`, {
+        toWorkshopId,
+      });
+      setShowTransferSelectForId(null);
+      setTransferDestinationId('');
+      await refreshParticipantData(selectedParticipantReg.id);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Erro ao transferir oficina.';
+      setManagingWorkshopsError(Array.isArray(msg) ? msg.join('. ') : msg);
+    } finally {
+      setManagingWorkshopsLoading(false);
     }
   };
 
@@ -1837,6 +1916,18 @@ export default function EventDetailPage() {
                                   <>
                                     <button
                                       onClick={() => {
+                                        setSelectedParticipantReg(reg);
+                                        setManagingWorkshopsError(null);
+                                        setShowTransferSelectForId(null);
+                                        setTransferDestinationId('');
+                                        setParticipantWorkshopsModalOpen(true);
+                                      }}
+                                      className="text-2xs font-extrabold text-teal-400 hover:text-teal-300 transition-colors"
+                                    >
+                                      Oficinas
+                                    </button>
+                                    <button
+                                      onClick={() => {
                                         setTransferTargetId(reg.id);
                                         setTransferError(null);
                                         setTransferData({ name: '', email: '', cpf: '', phone: '' });
@@ -2793,6 +2884,213 @@ export default function EventDetailPage() {
               >
                 Fechar
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: GERENCIAR OFICINAS DO PARTICIPANTE --- */}
+      {participantWorkshopsModalOpen && selectedParticipantReg && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-850 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setParticipantWorkshopsModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-450 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-teal-400" />
+                Gerenciar Oficinas do Participante
+              </h3>
+              <p className="text-xs text-slate-400">
+                Inscrições extras, cancelamentos e transferências para o participante.
+              </p>
+            </div>
+
+            <div className="bg-slate-950/50 border border-slate-850 rounded-xl p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <span className="text-slate-500 block text-3xs font-extrabold uppercase tracking-wider">Nome</span>
+                  <span className="text-white font-semibold">{selectedParticipantReg.name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-3xs font-extrabold uppercase tracking-wider">E-mail</span>
+                  <span className="text-white font-mono break-all">{selectedParticipantReg.email}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-3xs font-extrabold uppercase tracking-wider">CPF</span>
+                  <span className="text-white font-mono">{selectedParticipantReg.cpf}</span>
+                </div>
+              </div>
+            </div>
+
+            {managingWorkshopsError && (
+              <div className="p-3 bg-red-950/40 border border-red-900/50 rounded-xl text-xs text-red-400 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{managingWorkshopsError}</span>
+              </div>
+            )}
+
+            {/* Current enrollments */}
+            <div className="space-y-3">
+              <h4 className="text-3xs font-extrabold uppercase tracking-widest text-slate-400 flex items-center justify-between">
+                <span>Oficinas Matriculadas ({selectedParticipantReg.workshopEnrollments?.length || 0})</span>
+                {event?.maxWorkshops > 0 && (
+                  <span className="text-slate-500 lowercase normal-case">
+                    limite: {event.maxWorkshops} oficina(s)
+                  </span>
+                )}
+              </h4>
+
+              {(!selectedParticipantReg.workshopEnrollments || selectedParticipantReg.workshopEnrollments.length === 0) ? (
+                <div className="text-center py-6 border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs">
+                  Este participante não está matriculado em nenhuma oficina.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedParticipantReg.workshopEnrollments.map((enrollment: any) => {
+                    const ws = enrollment.workshop;
+                    if (!ws) return null;
+                    const isTransferringThis = showTransferSelectForId === ws.id;
+
+                    return (
+                      <div key={enrollment.id} className="bg-slate-950 border border-slate-850 rounded-xl p-3.5 flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h5 className="text-xs font-bold text-white">{ws.title}</h5>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-3xs text-slate-400 mt-1 font-mono">
+                              <span>📅 {new Date(ws.startTime).toLocaleDateString('pt-BR')}</span>
+                              <span>⏰ {new Date(ws.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(ws.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              {ws.location && <span>📍 {ws.location}</span>}
+                            </div>
+                          </div>
+                          {!isTransferringThis && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                disabled={managingWorkshopsLoading}
+                                onClick={() => {
+                                  setShowTransferSelectForId(ws.id);
+                                  setTransferDestinationId('');
+                                }}
+                                className="text-3xs font-extrabold bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                              >
+                                Transferir
+                              </button>
+                              <button
+                                disabled={managingWorkshopsLoading}
+                                onClick={() => handleCancelWorkshopEnrollment(ws.id)}
+                                className="text-3xs font-extrabold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Transfer line */}
+                        {isTransferringThis && (
+                          <div className="pt-3 border-t border-slate-900 flex flex-col sm:flex-row items-end sm:items-center gap-3 bg-slate-900/50 p-2.5 rounded-lg">
+                            <div className="w-full space-y-1">
+                              <label className="text-3xs font-extrabold uppercase tracking-wider text-slate-400">Transferir para:</label>
+                              <select
+                                value={transferDestinationId}
+                                onChange={(e) => setTransferDestinationId(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                              >
+                                <option value="">Selecione a oficina de destino...</option>
+                                {workshops
+                                  .filter((w) => w.id !== ws.id && !selectedParticipantReg.workshopEnrollments.some((e: any) => e.workshopId === w.id))
+                                  .map((w) => {
+                                    return (
+                                      <option key={w.id} value={w.id}>
+                                        {w.title} ({w.capacity - (w._count?.enrollments || 0)} vagas restantes)
+                                      </option>
+                                    );
+                                  })}
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                disabled={managingWorkshopsLoading || !transferDestinationId}
+                                onClick={() => handleTransferWorkshop(ws.id, transferDestinationId)}
+                                className="text-3xs font-extrabold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                              >
+                                Confirmar
+                              </button>
+                              <button
+                                disabled={managingWorkshopsLoading}
+                                onClick={() => {
+                                  setShowTransferSelectForId(null);
+                                  setTransferDestinationId('');
+                                }}
+                                className="text-3xs font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 px-3 py-1.5 rounded transition-colors"
+                              >
+                                Voltar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Available workshops to add */}
+            <div className="space-y-3 pt-4 border-t border-slate-850">
+              <h4 className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">
+                Adicionar Matrícula (Vagas Disponíveis)
+              </h4>
+
+              {workshops.filter((w) => !selectedParticipantReg.workshopEnrollments?.some((e: any) => e.workshopId === w.id)).length === 0 ? (
+                <div className="text-center py-4 text-slate-500 text-xs">
+                  Não há outras oficinas disponíveis para este participante.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {workshops
+                    .filter((w) => !selectedParticipantReg.workshopEnrollments?.some((e: any) => e.workshopId === w.id))
+                    .map((w) => {
+                      const enrolledCount = w._count?.enrollments || 0;
+                      const vacancies = w.capacity - enrolledCount;
+                      const hasLimitReached = event?.maxWorkshops > 0 && (selectedParticipantReg.workshopEnrollments?.length || 0) >= event.maxWorkshops;
+
+                      return (
+                        <div key={w.id} className="bg-slate-950/40 border border-slate-850 hover:border-slate-800 rounded-xl p-3 flex items-center justify-between gap-4 transition-all">
+                          <div>
+                            <h5 className="text-xs font-bold text-white">{w.title}</h5>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-3xs text-slate-400 mt-1 font-mono">
+                              <span>📅 {new Date(w.startTime).toLocaleDateString('pt-BR')}</span>
+                              <span>⏰ {new Date(w.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(w.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>👥 {vacancies} / {w.capacity} vagas livres</span>
+                            </div>
+                          </div>
+                          <button
+                            disabled={managingWorkshopsLoading || vacancies <= 0 || hasLimitReached}
+                            onClick={() => handleEnrollWorkshop(w.id)}
+                            className="text-3xs font-extrabold bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20 disabled:opacity-30 disabled:hover:bg-teal-500/10 px-3 py-1.5 rounded transition-colors shrink-0"
+                          >
+                            {hasLimitReached ? 'Limite Excedido' : vacancies <= 0 ? 'Esgotado' : 'Inscrever'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-850">
+              <button
+                type="button"
+                onClick={() => setParticipantWorkshopsModalOpen(false)}
+                className="bg-slate-800 hover:bg-slate-750 text-white font-extrabold text-xs px-4 py-2 rounded-lg transition-all"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
