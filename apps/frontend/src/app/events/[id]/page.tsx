@@ -1291,7 +1291,7 @@ export default function EventDetailPage() {
               speakers: `Palestrantes (${speakers.length})`,
               sponsors: `Patrocinadores (${sponsors.length})`,
               schedule: `Programação (${schedule.length})`,
-              workshops: `Oficinas (${workshops.length})`,
+              workshops: `Atividades / Oficinas (${workshops.length})`,
               registrations: 'Gerenciar Inscrições',
               checkin: 'Painel Check-in',
               certificates: 'Certificados',
@@ -1417,7 +1417,7 @@ export default function EventDetailPage() {
 
                   {/* Max Workshops */}
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Máximo de Oficinas por Participante</label>
+                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Máximo de Atividades / Oficinas por Participante</label>
                     <input
                       type="number"
                       required
@@ -1426,7 +1426,7 @@ export default function EventDetailPage() {
                       onChange={(e) => setMaxWorkshops(Number(e.target.value))}
                       className="w-full bg-slate-950/80 border border-slate-850 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-colors"
                     />
-                    <p className="text-[11px] text-slate-500">Defina 0 para ilimitado ou se não houver oficinas.</p>
+                    <p className="text-[11px] text-slate-500">Defina 0 para ilimitado ou se não houver atividades/oficinas.</p>
                   </div>
 
                   {/* Start Date */}
@@ -1759,11 +1759,11 @@ export default function EventDetailPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-slate-900/10 border border-slate-900/40 p-5 rounded-2xl">
               <div>
-                <h2 className="text-xl font-extrabold text-white">Gestão de Oficinas (CONLUZ)</h2>
+                <h2 className="text-xl font-extrabold text-white">Gestão de Atividades / Oficinas (CONLUZ)</h2>
                 <p className="text-xs text-slate-400 mt-1">
                   Limite por participante:{' '}
                   <span className="font-extrabold text-violet-400">
-                    {event?.maxWorkshops === 0 ? 'Sem limite' : `${event?.maxWorkshops} oficina(s)`}
+                    {event?.maxWorkshops === 0 ? 'Sem limite' : `${event?.maxWorkshops} atividade(s) / oficina(s)`}
                   </span>
                 </p>
               </div>
@@ -1772,13 +1772,13 @@ export default function EventDetailPage() {
                 className="bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center space-x-2 text-xs py-1.5 px-4 rounded-lg transition-colors"
               >
                 <Plus className="h-4 w-4" />
-                <span>Criar Oficina</span>
+                <span>Criar Atividade / Oficina</span>
               </Button>
             </div>
 
             {workshops.length === 0 ? (
               <div className="border border-dashed border-slate-850 rounded-2xl flex flex-col items-center justify-center py-16 text-center">
-                <span className="text-slate-500 text-sm">Nenhuma oficina cadastrada neste evento.</span>
+                <span className="text-slate-500 text-sm">Nenhuma atividade ou oficina cadastrada neste evento.</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1996,7 +1996,7 @@ export default function EventDetailPage() {
                                       }}
                                       className="text-2xs font-extrabold text-teal-400 hover:text-teal-300 transition-colors"
                                     >
-                                      Oficinas
+                                      Atividades / Oficinas
                                     </button>
                                     <button
                                       onClick={() => {
@@ -2234,14 +2234,14 @@ export default function EventDetailPage() {
                     className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50 cursor-pointer"
                   >
                     <option value="EVENT">Participação no Evento Principal</option>
-                    <option value="WORKSHOP">Oficinas (Atividades Acadêmicas/Técnicas)</option>
+                    <option value="WORKSHOP">Atividades / Oficinas (Mesa Redonda, Abertura, Oficinas, etc.)</option>
                     <option value="CUSTOM">Atividade Personalizada (Mesa Redonda, Abertura, etc.)</option>
                   </select>
                 </div>
 
                 {selectedCertificateType === 'WORKSHOP' && (
                   <div className="space-y-1.5">
-                    <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Selecione a Oficina</label>
+                    <label className="text-3xs font-extrabold uppercase tracking-widest text-slate-400">Selecione a Atividade / Oficina</label>
                     <select
                       value={selectedWorkshopId}
                       onChange={(e) => {
@@ -2253,7 +2253,7 @@ export default function EventDetailPage() {
                       }}
                       className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50 cursor-pointer"
                     >
-                      <option value="">Selecione uma oficina...</option>
+                      <option value="">Selecione uma atividade/oficina...</option>
                       {workshops.map((ws) => (
                         <option key={ws.id} value={ws.id}>
                           {ws.title}
@@ -2682,7 +2682,7 @@ export default function EventDetailPage() {
           <div className="bg-slate-900 border border-slate-850 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
             <h3 className="font-extrabold text-white text-lg">
               {editingId ? 'Editar' : 'Adicionar'}{' '}
-              {modalOpen === 'speaker' ? 'Palestrante' : modalOpen === 'sponsor' ? 'Patrocinador' : modalOpen === 'schedule' ? 'Atividade' : 'Oficina'}
+              {modalOpen === 'speaker' ? 'Palestrante' : modalOpen === 'sponsor' ? 'Patrocinador' : modalOpen === 'schedule' ? 'Atividade' : 'Atividade / Oficina'}
             </h3>
 
             {modalError && <p className="text-xs font-semibold text-red-400 bg-red-950/20 border border-red-900/30 p-2.5 rounded-lg">{modalError}</p>}
@@ -2788,8 +2788,8 @@ export default function EventDetailPage() {
               {modalOpen === 'workshop' && (
                 <>
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-450 font-bold uppercase">Título da Oficina *</label>
-                    <input type="text" value={workTitle} onChange={(e) => setWorkTitle(e.target.value)} placeholder="Ex: Oficina de Robótica e IOT" className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none" />
+                    <label className="text-xs text-slate-455 font-bold uppercase">Título da Atividade / Oficina *</label>
+                    <input type="text" value={workTitle} onChange={(e) => setWorkTitle(e.target.value)} placeholder="Ex: Mesa Redonda sobre IOT" className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs text-slate-450 font-bold uppercase">Descrição</label>
@@ -2867,7 +2867,7 @@ export default function EventDetailPage() {
               <div className="space-y-1">
                 <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-violet-500" />
-                  Participantes da Oficina
+                  Participantes da Atividade / Oficina
                 </h3>
                 <p className="text-xs text-violet-400 font-extrabold">
                   {selectedWorkshop.title}
@@ -2902,7 +2902,7 @@ export default function EventDetailPage() {
               ) : workshopEnrollments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Users className="h-8 w-8 text-slate-650 mb-2" />
-                  <span className="text-slate-500 text-xs font-semibold">Nenhum participante inscrito nesta oficina ainda.</span>
+                  <span className="text-slate-500 text-xs font-semibold">Nenhum participante inscrito nesta atividade/oficina ainda.</span>
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse text-xs">
@@ -2975,7 +2975,7 @@ export default function EventDetailPage() {
             <div className="space-y-1.5">
               <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-teal-400" />
-                Gerenciar Oficinas do Participante
+                Gerenciar Atividades / Oficinas do Participante
               </h3>
               <p className="text-xs text-slate-400">
                 Inscrições extras, cancelamentos e transferências para o participante.
@@ -3009,17 +3009,17 @@ export default function EventDetailPage() {
             {/* Current enrollments */}
             <div className="space-y-3">
               <h4 className="text-3xs font-extrabold uppercase tracking-widest text-slate-400 flex items-center justify-between">
-                <span>Oficinas Matriculadas ({selectedParticipantReg.workshopEnrollments?.length || 0})</span>
+                <span>Atividades / Oficinas Matriculadas ({selectedParticipantReg.workshopEnrollments?.length || 0})</span>
                 {event?.maxWorkshops > 0 && (
                   <span className="text-slate-500 lowercase normal-case">
-                    limite: {event.maxWorkshops} oficina(s)
+                    limite: {event.maxWorkshops} atividade(s) / oficina(s)
                   </span>
                 )}
               </h4>
 
               {(!selectedParticipantReg.workshopEnrollments || selectedParticipantReg.workshopEnrollments.length === 0) ? (
-                <div className="text-center py-6 border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs">
-                  Este participante não está matriculado em nenhuma oficina.
+                <div className="text-center py-6 border border-dashed border-slate-850 rounded-xl text-slate-500 text-xs">
+                  Este participante não está matriculado em nenhuma atividade/oficina.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -3072,7 +3072,7 @@ export default function EventDetailPage() {
                                 onChange={(e) => setTransferDestinationId(e.target.value)}
                                 className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
                               >
-                                <option value="">Selecione a oficina de destino...</option>
+                                <option value="">Selecione a atividade/oficina de destino...</option>
                                 {workshops
                                   .filter((w) => w.id !== ws.id && !selectedParticipantReg.workshopEnrollments.some((e: any) => e.workshopId === w.id))
                                   .map((w) => {
@@ -3120,7 +3120,7 @@ export default function EventDetailPage() {
 
               {workshops.filter((w) => !selectedParticipantReg.workshopEnrollments?.some((e: any) => e.workshopId === w.id)).length === 0 ? (
                 <div className="text-center py-4 text-slate-500 text-xs">
-                  Não há outras oficinas disponíveis para este participante.
+                  Não há outras atividades/oficinas disponíveis para este participante.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-2">

@@ -284,7 +284,7 @@ export default function ManualPage() {
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li><strong>Processamento Assíncrono (BullMQ)</strong>: Envio de e-mails, emissões em lote e gerações de certificados PDF são processados em background no container Worker.</li>
-                    <li><strong>Pessimistic Locking</strong>: Previne overbooking na compra/inscrição de ingressos e oficinas por travas diretas no nível de banco.</li>
+                    <li><strong>Pessimistic Locking</strong>: Previne overbooking na compra/inscrição de ingressos e atividades/oficinas por travas diretas no nível de banco.</li>
                     <li><strong>Logger Assíncrono (Pino)</strong>: Gravação rápida de auditoria sem bloquear o Event Loop do Node.js.</li>
                     <li><strong>PWA + Dexie.js</strong>: Check-in offline que reduz requisições redundantes de validação.</li>
                   </ul>
@@ -391,15 +391,15 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-emerald-400" />
-                    5. Gestão de Oficinas Integradas
+                    5. Gestão de Atividades / Oficinas Integradas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Para habilitar o cadastro de oficinas e palestrantes no evento (como no CONLUZ):
+                    Para habilitar o cadastro de atividades, oficinas e palestrantes no evento (como no CONLUZ):
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1.5">
-                    <li>Ao criar ou editar o evento, configure o **&quot;Limite de Oficinas por Participante&quot;** (`maxWorkshops`) com um valor maior que zero.</li>
-                    <li>Acesse o menu de **Oficinas** para cadastrar as atividades e os respectivos palestrantes.</li>
-                    <li>Defina a capacidade máxima de cada oficina. O sistema impedirá automaticamente o overbooking através de travas de concorrência.</li>
+                    <li>Ao criar ou editar o evento, configure o **&quot;Limite de Atividades / Oficinas por Participante&quot;** (`maxWorkshops`) com um valor maior que zero.</li>
+                    <li>Acesse o menu de **Atividades / Oficinas** para cadastrar as atividades e os respectivos palestrantes.</li>
+                    <li>Defina a capacidade máxima de cada atividade/oficina. O sistema impedirá automaticamente o overbooking através de travas de concorrência.</li>
                   </ul>
                 </div>
 
@@ -414,7 +414,7 @@ export default function ManualPage() {
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li>**Upload de Background**: Envie uma imagem de fundo (recomendável formato A4 paisagem, tamanho máximo 5MB).</li>
                     <li>**Mapeamento de Coordenadas JSON**: Defina em pixels as coordenadas (X, Y) para sobreposição do nome do participante, carga horária, data, texto padrão e código de autenticação.</li>
-                    <li>**Emissão Geral & Oficinas**: O painel permite emitir e enviar por e-mail os certificados individualmente ou em lote para todos os presentes. O certificado geral usa os dados do evento principal, e o das oficinas puxa dinamicamente a carga horária e o título da oficina em que o participante registrou presença.</li>
+                    <li>**Emissão Geral & Atividades/Oficinas**: O painel permite emitir e enviar por e-mail os certificados individualmente ou em lote para todos os presentes. O certificado geral usa os dados do evento principal, e o de atividades/oficinas puxa dinamicamente a carga horária e o título da atividade/oficina em que o participante registrou presença.</li>
                   </ul>
                 </div>
 
@@ -504,15 +504,15 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-blue-400" />
-                    4. Gestão Operacional de Oficinas
+                    4. Gestão Operacional de Atividades / Oficinas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Se o evento tiver oficinas ativas, o organizador tem acesso total para gerenciar o andamento das oficinas:
+                    Se o evento tiver atividades/oficinas ativas, o organizador tem acesso total para gerenciar o andamento das atividades/oficinas:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li>Cadastrar e associar palestrantes.</li>
-                    <li>Visualizar participantes matriculados em cada oficina específica.</li>
-                    <li>Realizar cancelamentos administrativos de inscrições em oficinas específicas para liberar vagas.</li>
+                    <li>Visualizar participantes matriculados em cada atividade/oficina específica.</li>
+                    <li>Realizar cancelamentos administrativos de inscrições em atividades/oficinas específicas para liberar vagas.</li>
                   </ul>
                 </div>
 
@@ -526,7 +526,7 @@ export default function ManualPage() {
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
                     <li>Validar o ingresso geral do participante no evento principal.</li>
-                    <li>Selecionar no painel uma oficina específica e escanear o QR Code único do participante para registrar a presença apenas naquela oficina (verificando se o participante está devidamente matriculado nela).</li>
+                    <li>Selecionar no painel uma atividade/oficina específica e escanear o QR Code único do participante para registrar a presença apenas naquela atividade/oficina (verificando se o participante está devidamente matriculado nela).</li>
                   </ul>
                 </div>
 
@@ -603,15 +603,15 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-amber-400" />
-                    2. Check-in por Pontos / Oficina
+                    2. Check-in por Pontos / Atividades / Oficinas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     A portaria de check-in permite agora o controle segmentado:
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
-                    <li>No topo da tela de credenciamento, selecione o ponto correspondente: <strong>Entrada Geral</strong> ou a <strong>Oficina</strong> em que você está operando.</li>
-                    <li>Ao ler o QR Code único do participante, o sistema valida a matrícula específica dele na atividade. Se ele não estiver matriculado na oficina selecionada, o acesso será barrado.</li>
-                    <li>O check-in geral do participante não interfere na validação das oficinas e vice-versa, mantendo os registros individuais e independentes.</li>
+                    <li>No topo da tela de credenciamento, selecione o ponto correspondente: <strong>Entrada Geral</strong> ou a <strong>Atividade / Oficina</strong> em que você está operando.</li>
+                    <li>Ao ler o QR Code único do participante, o sistema valida a matrícula específica dele na atividade/oficina. Se ele não estiver matriculado nela, o acesso será barrado.</li>
+                    <li>O check-in geral do participante não interfere na validação das atividades/oficinas e vice-versa, mantendo os registros individuais e independentes.</li>
                   </ul>
                 </div>
 
@@ -624,7 +624,7 @@ export default function ManualPage() {
                     Caso a câmera do dispositivo apresente problemas ou o participante não tenha o QR Code em mãos, utilize o campo de busca manual no topo do leitor para localizar a inscrição por Nome ou CPF.
                   </p>
                   <p className="text-xs text-slate-450">
-                    Basta clicar em <strong>&quot;Confirmar Presença&quot;</strong> na linha do participante correspondente após a validação física de sua identidade. Se estiver operando uma oficina, o botão irá registrar presença especificamente naquela oficina.
+                    Basta clicar em <strong>&quot;Confirmar Presença&quot;</strong> na linha do participante correspondente após a validação física de sua identidade. Se estiver operando uma atividade/oficina, o botão irá registrar presença especificamente nela.
                   </p>
                 </div>
 
@@ -637,7 +637,7 @@ export default function ManualPage() {
                     Se o local do evento estiver sem conexão à internet (ex: quadras de esporte ou locais distantes), instale o aplicativo em seu celular (PWA).
                   </p>
                   <p className="text-xs text-slate-450 leading-relaxed">
-                    Ao abrir a página do evento com internet antes de ir para o local, o aplicativo baixa os dados básicos dos participantes (incluindo as oficinas matriculadas) e salva localmente no banco do navegador (<strong>Dexie.js</strong>). A validação por câmera continuará funcionando offline!
+                    Ao abrir a página do evento com internet antes de ir para o local, o aplicativo baixa os dados básicos dos participantes (incluindo as atividades/oficinas matriculadas) e salva localmente no banco do navegador (<strong>Dexie.js</strong>). A validação por câmera continuará funcionando offline!
                   </p>
                 </div>
 
@@ -649,8 +649,8 @@ export default function ManualPage() {
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Ao retornar a um local com sinal de internet, acesse a página de sincronização offline e clique no botão <strong>&quot;Sincronizar Check-ins&quot;</strong>. 
                   </p>
-                  <p className="text-xs text-slate-450">
-                    O aplicativo enviará os check-ins realizados no local em lote para a API (identificando se pertencem à entrada geral ou a uma oficina específica), que registrará as presenças de forma atômica no banco de dados central.
+                  <p className="text-xs text-slate-455">
+                    O aplicativo enviará os check-ins realizados no local em lote para a API (identificando se pertencem à entrada geral ou a uma atividade/oficina específica), que registrará as presenças de forma atômica no banco de dados central.
                   </p>
                 </div>
 
@@ -697,16 +697,16 @@ export default function ManualPage() {
                 <div className="p-5 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Sparkles className="h-4.5 w-4.5 text-slate-400" />
-                    2. Inscrição e Matrícula em Oficinas
+                    2. Inscrição e Matrícula em Atividades / Oficinas
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Se o evento possuir oficinas integradas (como o CONLUZ):
+                    Se o evento possuir atividades/oficinas integradas (como o CONLUZ):
                   </p>
                   <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
-                    <li>Durante o preenchimento do formulário de inscrição, você poderá selecionar as oficinas das quais deseja participar.</li>
-                    <li>O sistema limitará sua escolha ao número máximo permitido de oficinas por inscrito.</li>
-                    <li>Você não poderá selecionar oficinas com horários conflitantes (sobrepostos).</li>
-                    <li>Caso as vagas de uma oficina acabem, você precisará escolher outra atividade com vagas em aberto.</li>
+                    <li>Durante o preenchimento do formulário de inscrição, você poderá selecionar as atividades/oficinas das quais deseja participar.</li>
+                    <li>O sistema limitará sua escolha ao número máximo permitido de atividades/oficinas por inscrito.</li>
+                    <li>Você não poderá selecionar atividades/oficinas com horários conflitantes (sobrepostos).</li>
+                    <li>Caso as vagas de uma atividade/oficina acabem, você precisará escolher outra atividade com vagas em aberto.</li>
                   </ul>
                 </div>
 
@@ -726,7 +726,7 @@ export default function ManualPage() {
                     4. Ingresso Digital Único
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Ao confirmar sua vaga, o sistema gera um ingresso digital criptografado com QR Code. Apresente este **único ingresso** no portão do evento para que o Checker realize a validação de entrada geral e também nas salas de oficinas que você escolheu.
+                    Ao confirmar sua vaga, o sistema gera um ingresso digital criptografado com QR Code. Apresente este **único ingresso** no portão do evento para que o Checker realize a validação de entrada geral e também nas salas de atividades/oficinas que você escolheu.
                   </p>
                 </div>
 
@@ -738,9 +738,9 @@ export default function ManualPage() {
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Após a finalização do evento, se o seu check-in tiver sido confirmado pela equipe organizadora, o botão <strong>&quot;Emitir Certificado&quot;</strong> estará liberado na sua página de ingressos. 
                   </p>
-                  <ul className="list-disc pl-4 text-xs text-slate-450 space-y-1">
+                  <ul className="list-disc pl-4 text-xs text-slate-455 space-y-1">
                     <li>Você poderá emitir o **Certificado Geral** do evento principal se tiver feito o check-in na entrada.</li>
-                    <li>Poderá emitir também o **Certificado de Oficina** para cada oficina em que participou e teve a presença validada pela portaria específica.</li>
+                    <li>Poderá emitir também o **Certificado de Atividade / Oficina** para cada atividade/oficina em que participou e teve a presença validada pela portaria específica.</li>
                     <li>Cada certificado possui um código único e QR Code para validação pública de autenticidade.</li>
                   </ul>
                 </div>

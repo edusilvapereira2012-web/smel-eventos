@@ -68,7 +68,7 @@ export default function CheckInScannerPage() {
             setWorkshops(res.data);
             localStorage.setItem(`eh_workshops_${eventId}`, JSON.stringify(res.data));
           })
-          .catch(err => console.error('Erro ao buscar oficinas:', err));
+          .catch(err => console.error('Erro ao buscar atividades/oficinas:', err));
       } else {
         const cached = localStorage.getItem(`eh_workshops_${eventId}`);
         if (cached) {
@@ -261,7 +261,7 @@ export default function CheckInScannerPage() {
         
         setScanResult({
           status: 'success',
-          message: res.data.registration.workshopTitle ? 'Check-in Oficina Confirmado!' : 'Check-in Confirmado!',
+          message: res.data.registration.workshopTitle ? 'Check-in Atividade / Oficina Confirmado!' : 'Check-in Confirmado!',
           details: `${res.data.registration.name} (${res.data.registration.code})${res.data.registration.workshopTitle ? ` - ${res.data.registration.workshopTitle}` : ''}`,
         });
       } catch (err: any) {
@@ -306,7 +306,7 @@ export default function CheckInScannerPage() {
           setScanResult({
             status: 'error',
             message: 'Não Matriculado',
-            details: `${reg.name} não está matriculado nesta oficina.`,
+            details: `${reg.name} não está matriculado nesta atividade/oficina.`,
           });
           return;
         }
@@ -316,8 +316,8 @@ export default function CheckInScannerPage() {
         if (inQueue || checkedInTime) {
           setScanResult({
             status: 'warning',
-            message: 'Check-in Duplicado (Oficina)',
-            details: `${reg.name} já possui check-in nesta oficina.`,
+            message: 'Check-in Duplicado (Atividade/Oficina)',
+            details: `${reg.name} já possui check-in nesta atividade/oficina.`,
           });
           return;
         }
@@ -336,8 +336,8 @@ export default function CheckInScannerPage() {
 
         setScanResult({
           status: 'success',
-          message: 'Salvo Offline (Oficina)!',
-          details: `${reg.name} (${reg.code}) - Oficina: ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Oficina'}`,
+          message: 'Salvo Offline (Atividade/Oficina)!',
+          details: `${reg.name} (${reg.code}) - Atividade/Oficina: ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Atividade/Oficina'}`,
         });
       } else {
         // Check for local duplications (either in pending queue or already marked checkedInAt)
@@ -379,7 +379,7 @@ export default function CheckInScannerPage() {
         setScanResult({
           status: 'error',
           message: 'Não Matriculado',
-          details: `${reg.name} não está matriculado nesta oficina.`,
+          details: `${reg.name} não está matriculado nesta atividade/oficina.`,
         });
         return;
       }
@@ -389,8 +389,8 @@ export default function CheckInScannerPage() {
       if (inQueue || checkedInTime) {
         setScanResult({
           status: 'warning',
-          message: 'Check-in Duplicado (Oficina)',
-          details: `${reg.name} (${reg.code}) já está registrado nesta oficina.`,
+          message: 'Check-in Duplicado (Atividade/Oficina)',
+          details: `${reg.name} (${reg.code}) já está registrado nesta atividade/oficina.`,
         });
         return;
       }
@@ -407,8 +407,8 @@ export default function CheckInScannerPage() {
 
       setScanResult({
         status: 'success',
-        message: isOnline ? 'Check-in Enviado (Oficina)!' : 'Salvo Offline (Oficina)!',
-        details: `${reg.name} (${reg.code}) - ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Oficina'}`,
+        message: isOnline ? 'Check-in Enviado (Atividade/Oficina)!' : 'Salvo Offline (Atividade/Oficina)!',
+        details: `${reg.name} (${reg.code}) - ${workshops.find(w => w.id === selectedWorkshopId)?.title || 'Atividade/Oficina'}`,
       });
     } else {
       // Check if duplicate locally
@@ -651,10 +651,10 @@ export default function CheckInScannerPage() {
               backgroundSize: '16px'
             }}
           >
-            <option value="">Evento Principal (Entrada Geral)</option>
+            <option value="">Evento Principal (Entrada Geral / Abertura)</option>
             {workshops.map((w) => (
               <option key={w.id} value={w.id}>
-                Oficina: {w.title} ({w.location || 'Sem local'})
+                Atividade / Oficina: {w.title} ({w.location || 'Sem local'})
               </option>
             ))}
           </select>

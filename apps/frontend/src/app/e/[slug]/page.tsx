@@ -665,11 +665,11 @@ export default function EventPublicLandingPage() {
               {workshops.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-slate-800/80">
                   <div>
-                    <label className="text-2xs font-extrabold text-slate-400 uppercase tracking-wider block">Escolha suas Oficinas</label>
+                    <label className="text-2xs font-extrabold text-slate-400 uppercase tracking-wider block">Escolha suas Atividades / Oficinas</label>
                     <p className="text-[10px] text-slate-500 mt-0.5">
                       Você pode selecionar até{' '}
                       <span className="font-bold text-violet-400">
-                        {maxWorkshops === 0 ? 'quantas oficinas desejar' : `${maxWorkshops} oficina(s)`}
+                        {maxWorkshops === 0 ? 'quantas atividades/oficinas desejar' : `${maxWorkshops} atividade(s) / oficina(s)`}
                       </span>
                       .
                     </p>
