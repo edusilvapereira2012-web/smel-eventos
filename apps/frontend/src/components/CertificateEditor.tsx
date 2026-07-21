@@ -14,7 +14,10 @@ import {
   Check,
   RotateCcw,
   Palette,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  X,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -78,6 +81,31 @@ export default function CertificateEditor({
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // --- PREMIUM CONFIRMATION MODAL STATE ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, isDestructive = false) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      isDestructive,
+      onConfirm,
+    });
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartOffset = useRef({ x: 0, y: 0 });
@@ -177,10 +205,14 @@ export default function CertificateEditor({
   };
 
   const resetToDefault = () => {
-    if (confirm('Deseja redefinir as posições e tamanhos para o padrão?')) {
-      setLayout(defaultLayout);
-      setSuccessMsg('Posições redefinidas com sucesso.');
-    }
+    openConfirm(
+      'Resetar Posições',
+      'Deseja redefinir as posições e tamanhos para o padrão?',
+      () => {
+        setLayout(defaultLayout);
+        setSuccessMsg('Posições redefinidas com sucesso.');
+      }
+    );
   };
 
   const handleSave = async () => {
@@ -658,6 +690,62 @@ export default function CertificateEditor({
           </div>
         </div>
       </div>
+      {/* --- MODAL: PREMIUM CONFIRMATION --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+              className="absolute top-4 right-4 text-slate-450 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className={`p-3 rounded-full ${confirmModal.isDestructive ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-violet-500/10 text-violet-400 border border-violet-500/20'}`}>
+                {confirmModal.isDestructive ? (
+                  <AlertTriangle className="h-6 w-6 animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="h-6 w-6" />
+                )}
+              </div>
+              
+              <div className="space-y-1.5">
+                <h3 className="font-extrabold text-white text-base">
+                  {confirmModal.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {confirmModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-bold text-xs py-2.5 rounded-xl border border-slate-750 transition-all duration-150"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className={`w-full text-white font-bold text-xs py-2.5 rounded-xl transition-all duration-150 shadow-lg ${
+                  confirmModal.isDestructive
+                    ? 'bg-red-600 hover:bg-red-750 shadow-red-950/20'
+                    : 'bg-violet-600 hover:bg-violet-750 shadow-violet-950/20'
+                }`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

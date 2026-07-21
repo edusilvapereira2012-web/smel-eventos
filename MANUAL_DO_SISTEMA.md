@@ -244,6 +244,45 @@ O organizador do evento pode optar por emitir os certificados de todos os partic
 * No painel do evento, clique em **Emitir em Lote** (geral ou por oficina específica).
 * O sistema enfileira o envio assíncrono para a fila BullMQ. Cada participante receberá em seu e-mail cadastrado o link de acesso direto e o certificado em anexo.
 
+---
+
+## 13. Inscrições Extra-Ingressos e Transferências na Hora do Evento
+
+A plataforma permite que a equipe organizadora realize inscrições e transferências na hora (direto no local do evento) para atender a demandas de credenciamento imediato e flexibilidade de oficinas.
+
+### 13.1. Inscrições Extra-Ingressos (Inscrição na Hora)
+* **Objetivo**: Inscrever participantes no dia do evento que não realizaram cadastro prévio online, permitindo inseri-los no evento principal e em oficinas com vagas remanescentes.
+* **Como realizar**:
+  1. No painel de administração do evento, clique no botão **"Inscrição Extra-Ingresso"** no topo da lista de inscritos.
+  2. Preencha os dados obrigatórios do participante: Nome Completo (convertido automaticamente para UPPERCASE), E-mail, CPF (validação de formato e duplicidade) e Telefone (obrigatório com DDD).
+  3. No seletor de oficinas, marque as oficinas em que o participante deseja se matricular. O sistema exibirá apenas as oficinas que possuírem vagas restantes no momento.
+  4. Clique em **"Confirmar Inscrição"**. O participante terá seu ingresso digital gerado e enviado por e-mail automaticamente.
+
+### 13.2. Transferências de Ingressos (Troca de Oficina)
+* **Objetivo**: Transferir um participante de uma oficina para outra no momento do credenciamento, caso ele desista de uma atividade ou queira preencher vagas abertas de última hora.
+* **Como realizar**:
+  1. Na listagem de inscritos do evento, localize o participante desejado.
+  2. Clique no botão **"Transferir"** na linha do participante.
+  3. No modal de transferência, selecione a oficina de destino desejada. O painel omitirá oficinas cheias ou que entrem em conflito de horário com as demais atividades em que o participante já esteja inscrito.
+  4. Confirme a transferência. O sistema fará a permuta de vagas em uma transação segura e atômica.
+
+---
+
+## 14. Sistema de Notificações e Confirmações Premium
+
+Para garantir uma interface polida, profissional e limpa, os alertas e diálogos padrões do navegador foram completamente substituídos por um sistema nativo de alta fidelidade visual.
+
+### 14.1. Notificações Toast em Tempo Real
+* **Gatilhos**: Toda ação crítica do sistema (criação de registros, alterações operacionais, erros de rede, transferências efetuadas e downloads concluídos) dispara um toast visual.
+* **Aesthetics**: Design com glassmorphism completo, desfoque de fundo inteligente (`backdrop-blur`), ícones animados de feedback e gradientes suaves.
+
+### 14.2. Modais de Confirmação Customizados (Sem window.confirm)
+* **Gatilhos**: Substitui avisos de exclusão de dados, exclusão de eventos/categorias, cancelamentos e redefinições de layout.
+* **Estilos Dinâmicos**:
+  * **Modais Informativos/Ação (Violeta)**: Utilizados para resets de layout, reenvios de e-mails em lote ou processos reversíveis. Apresentam um ícone de sucesso e botões no tom violeta da plataforma.
+  * **Modais Destrutivos/Irreversíveis (Vermelho)**: Utilizados para exclusão definitiva de usuários, exclusão física de eventos ou exclusão de categorias. Exibe um ícone de alerta piscando (`AlertTriangle`) e botão de confirmação vermelho em destaque.
+
+
 
 
 

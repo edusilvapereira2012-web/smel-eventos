@@ -7,7 +7,7 @@ import { useTenant } from '@/components/tenant-provider';
 import { useAuth } from '@/components/auth-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, UserPlus, ShieldAlert, Trash2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, ShieldAlert, Trash2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TenantSettings() {
@@ -31,6 +31,31 @@ export default function TenantSettings() {
   // Alert State
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // --- PREMIUM CONFIRMATION MODAL STATE ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, isDestructive = false) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      isDestructive,
+      onConfirm,
+    });
+  };
 
   const fetchMembers = async () => {
     if (!activeTenant) return;
@@ -112,17 +137,22 @@ export default function TenantSettings() {
 
   const handleRemoveMember = async (userId: string) => {
     if (!activeTenant || !hasPermission('members.delete')) return;
-    if (!confirm('Deseja realmente remover este membro da organização?')) return;
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await api.delete(`/tenants/${activeTenant.id}/members/${userId}`);
-      setSuccess('Membro removido com sucesso.');
-      await fetchMembers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao remover membro.');
-    }
+    openConfirm(
+      'Remover Membro',
+      'Deseja realmente remover este membro da organização?',
+      async () => {
+        setError(null);
+        setSuccess(null);
+        try {
+          await api.delete(`/tenants/${activeTenant.id}/members/${userId}`);
+          setSuccess('Membro removido com sucesso.');
+          await fetchMembers();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao remover membro.');
+        }
+      },
+      true
+    );
   };
 
   if (!activeTenant) {
@@ -324,6 +354,63 @@ export default function TenantSettings() {
           </div>
         </div>
       </div>
+
+      {/* --- MODAL: PREMIUM CONFIRMATION --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+              className="absolute top-4 right-4 text-slate-450 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className={`p-3 rounded-full ${confirmModal.isDestructive ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-violet-500/10 text-violet-400 border border-violet-500/20'}`}>
+                {confirmModal.isDestructive ? (
+                  <AlertTriangle className="h-6 w-6 animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="h-6 w-6" />
+                )}
+              </div>
+              
+              <div className="space-y-1.5">
+                <h3 className="font-extrabold text-white text-base">
+                  {confirmModal.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {confirmModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-bold text-xs py-2.5 rounded-xl border border-slate-750 transition-all duration-150"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className={`w-full text-white font-bold text-xs py-2.5 rounded-xl transition-all duration-150 shadow-lg ${
+                  confirmModal.isDestructive
+                    ? 'bg-red-600 hover:bg-red-750 shadow-red-950/20'
+                    : 'bg-violet-600 hover:bg-violet-750 shadow-violet-950/20'
+                }`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

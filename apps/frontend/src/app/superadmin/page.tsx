@@ -26,7 +26,8 @@ import {
   Eye,
   CheckCircle,
   Info,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 
 interface Stats {
@@ -93,6 +94,31 @@ export default function SuperadminDashboard() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // --- PREMIUM CONFIRMATION MODAL STATE ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, isDestructive = false) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      isDestructive,
+      onConfirm,
+    });
+  };
 
   // Email state variables
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
@@ -236,22 +262,24 @@ export default function SuperadminDashboard() {
       alert('Você não pode excluir seu próprio usuário de administrador.');
       return;
     }
-    const confirmed = window.confirm(
-      'Tem certeza de que deseja excluir definitivamente este usuário do sistema? Esta ação é irreversível e apagará todas as associações a organizações e inscrições de eventos.'
+    openConfirm(
+      'Excluir Usuário',
+      'Tem certeza de que deseja excluir definitivamente este usuário do sistema? Esta ação é irreversível e apagará todas as associações a organizações e inscrições de eventos.',
+      async () => {
+        try {
+          setActionLoading(id);
+          await api.delete(`/superadmin/users/${id}`);
+          setUsers(prev => prev.filter(u => u.id !== id));
+          const statsRes = await api.get<Stats>('/superadmin/stats');
+          setStats(statsRes.data);
+        } catch (err: any) {
+          alert(err.response?.data?.message || 'Erro ao excluir o usuário.');
+        } finally {
+          setActionLoading(null);
+        }
+      },
+      true
     );
-    if (!confirmed) return;
-
-    try {
-      setActionLoading(id);
-      await api.delete(`/superadmin/users/${id}`);
-      setUsers(prev => prev.filter(u => u.id !== id));
-      const statsRes = await api.get<Stats>('/superadmin/stats');
-      setStats(statsRes.data);
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Erro ao excluir o usuário.');
-    } finally {
-      setActionLoading(null);
-    }
   };
 
   if (authLoading || (!isSuperadmin && user)) {
@@ -933,6 +961,63 @@ export default function SuperadminDashboard() {
                   <span>Reenviar Agora</span>
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: PREMIUM CONFIRMATION --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+              className="absolute top-4 right-4 text-slate-450 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className={`p-3 rounded-full ${confirmModal.isDestructive ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-violet-500/10 text-violet-400 border border-violet-500/20'}`}>
+                {confirmModal.isDestructive ? (
+                  <AlertTriangle className="h-6 w-6 animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="h-6 w-6" />
+                )}
+              </div>
+              
+              <div className="space-y-1.5">
+                <h3 className="font-extrabold text-white text-base">
+                  {confirmModal.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {confirmModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-bold text-xs py-2.5 rounded-xl border border-slate-750 transition-all duration-150"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className={`w-full text-white font-bold text-xs py-2.5 rounded-xl transition-all duration-150 shadow-lg ${
+                  confirmModal.isDestructive
+                    ? 'bg-red-600 hover:bg-red-750 shadow-red-950/20'
+                    : 'bg-violet-600 hover:bg-violet-750 shadow-violet-950/20'
+                }`}
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </div>

@@ -193,3 +193,24 @@ O banco de dados PostgreSQL utiliza um schema unificado com suporte a multi-inqu
 * **Experiência do Usuário (UX/UI)**: Mapeamento de badges coloridos e listagens localizadas para garantir uma interface nativa em português sem dependência de pacotes de tradução externos pesados.
 * **Ocultação de Metadados de Desenvolvimento**: Remoção completa de badges de status internos do cabeçalho da página inicial do painel (como a tag `SMEL-Plataforma de Eventos Leva 03 — Multi-Tenant + RBAC`) para apresentar um ambiente polido, limpo e profissional em produção.
 
+### 3.12. Inscrições Extra-Ingresso e Transferências (Leva 15)
+* **Inscrições Extra-Ingresso (Inscrições na Hora)**:
+  * Permite que operadores e organizadores realizem inscrições diretamente no local/dia do evento via painel administrativo (`POST /api/events/:id/extra-registration`).
+  * O fluxo exige Nome, E-mail, CPF (com validação matemática e de duplicidade por blind index) e Telefone (obrigatório).
+  * Permite selecionar as oficinas/atividades que o participante deseja frequentar, contanto que haja vagas remanescentes.
+  * O sistema utiliza locks pessimistas (`SELECT FOR UPDATE`) para garantir integridade e evitar overbooking sob concorrência intensa de portaria.
+  * O participante inscrito recebe imediatamente o e-mail de confirmação com seu QR Code de acesso.
+* **Transferência de Oficinas**:
+  * Permite mover um participante de uma oficina para outra dentro do mesmo evento (`POST /api/registrations/:registrationId/transfer-workshop`), liberando a vaga da oficina de origem e ocupando a vaga na oficina de destino.
+  * Exige que a inscrição de origem esteja ativa (`CONFIRMED`), que a oficina de destino possua vagas livres e que não ocorra sobreposição de horários com outras atividades em que o participante esteja matriculado.
+  * O processo é realizado em uma única transação atômica do banco com locks de linha para proteção de concorrência.
+
+### 3.13. Notificações Premium e Modais de Confirmação Customizados (Leva 15)
+* **Notificações Premium (Toasts)**:
+  * Sistema de alertas integrados em tempo real (`PremiumNotificationContext`) com design moderno de glassmorphism, sombras complexas e animações fluidas.
+  * Substituição de alertas genéricos do sistema por avisos estilizados com suporte a múltiplos status (Sucesso, Erro, Info, Alerta).
+* **Modais de Confirmação Customizados**:
+  * Substituição de todos os diálogos de confirmação nativos do navegador (`window.confirm`) por modais React customizados e estilizados.
+  * Suporte a modais padrão (Violeta) e modais destrutivos (Vermelho com ícone animado de perigo para ações irreversíveis como deleção de dados), enriquecidos com transições animadas (`animate-in fade-in zoom-in duration-200`) e desfoque de fundo (`backdrop-blur`).
+
+

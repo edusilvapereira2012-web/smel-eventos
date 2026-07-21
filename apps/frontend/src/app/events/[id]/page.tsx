@@ -219,6 +219,31 @@ export default function EventDetailPage() {
   const [transferDestinationId, setTransferDestinationId] = useState<string>('');
 
 
+  // --- PREMIUM CONFIRMATION MODAL STATE ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDestructive: false,
+    onConfirm: () => {},
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, isDestructive = false) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      isDestructive,
+      onConfirm,
+    });
+  };
+
   // CPF / Phone masks for transfer form
   const handleTransferCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
@@ -417,18 +442,24 @@ export default function EventDetailPage() {
 
   const handleCancelWorkshopEnrollment = async (workshopId: string) => {
     if (!selectedParticipantReg) return;
-    if (!confirm('Tem certeza que deseja cancelar a inscrição nesta oficina?')) return;
-    try {
-      setManagingWorkshopsLoading(true);
-      setManagingWorkshopsError(null);
-      await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${selectedParticipantReg.id}`);
-      await refreshParticipantData(selectedParticipantReg.id);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Erro ao cancelar inscrição na oficina.';
-      setManagingWorkshopsError(Array.isArray(msg) ? msg.join('. ') : msg);
-    } finally {
-      setManagingWorkshopsLoading(false);
-    }
+    openConfirm(
+      'Cancelar Matrícula',
+      'Tem certeza que deseja cancelar a inscrição nesta oficina?',
+      async () => {
+        try {
+          setManagingWorkshopsLoading(true);
+          setManagingWorkshopsError(null);
+          await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${selectedParticipantReg.id}`);
+          await refreshParticipantData(selectedParticipantReg.id);
+        } catch (err: any) {
+          const msg = err.response?.data?.message || 'Erro ao cancelar inscrição na oficina.';
+          setManagingWorkshopsError(Array.isArray(msg) ? msg.join('. ') : msg);
+        } finally {
+          setManagingWorkshopsLoading(false);
+        }
+      },
+      true
+    );
   };
 
   const handleTransferWorkshop = async (fromWorkshopId: string, toWorkshopId: string) => {
@@ -702,23 +733,28 @@ export default function EventDetailPage() {
   };
 
   const handleSwitchToStandard = async () => {
-    if (!confirm('Deseja alternar para o layout padrão? Isso desativará o plano de fundo customizado.')) return;
-    setCertConfigSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      await api.patch(`/events/${eventId}`, {
-        certificateBackgroundUrl: null,
-        certificateLayoutJson: null,
-      });
-      setSuccess('Layout padrão do certificado reativado com sucesso.');
-      setLayoutMode('standard');
-      loadAll();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao redefinir layout do certificado.');
-    } finally {
-      setCertConfigSaving(false);
-    }
+    openConfirm(
+      'Alternar Layout',
+      'Deseja alternar para o layout padrão? Isso desativará o plano de fundo customizado.',
+      async () => {
+        setCertConfigSaving(true);
+        setError(null);
+        setSuccess(null);
+        try {
+          await api.patch(`/events/${eventId}`, {
+            certificateBackgroundUrl: null,
+            certificateLayoutJson: null,
+          });
+          setSuccess('Layout padrão do certificado reativado com sucesso.');
+          setLayoutMode('standard');
+          loadAll();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao redefinir layout do certificado.');
+        } finally {
+          setCertConfigSaving(false);
+        }
+      }
+    );
   };
 
   const handleGenerateBatch = async () => {
@@ -816,14 +852,20 @@ export default function EventDetailPage() {
   };
 
   const handleDeleteEvent = async () => {
-    if (!confirm('Deseja realmente excluir este evento permanentemente? Esta ação é irreversível.')) return;
-    setError(null);
-    try {
-      await api.delete(`/events/${eventId}`);
-      router.push('/events');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Não foi possível excluir o evento.');
-    }
+    openConfirm(
+      'Excluir Evento',
+      'Deseja realmente excluir este evento permanentemente? Esta ação é irreversível.',
+      async () => {
+        setError(null);
+        try {
+          await api.delete(`/events/${eventId}`);
+          router.push('/events');
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Não foi possível excluir o evento.');
+        }
+      },
+      true
+    );
   };
 
   // --- SUB-RESOURCES ACTIONS ---
@@ -868,13 +910,19 @@ export default function EventDetailPage() {
   };
 
   const handleDeleteSpeaker = async (id: string) => {
-    if (!confirm('Excluir este palestrante?')) return;
-    try {
-      await api.delete(`/events/${eventId}/speakers/${id}`);
-      loadAll();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao deletar palestrante.');
-    }
+    openConfirm(
+      'Excluir Palestrante',
+      'Excluir este palestrante?',
+      async () => {
+        try {
+          await api.delete(`/events/${eventId}/speakers/${id}`);
+          loadAll();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao deletar palestrante.');
+        }
+      },
+      true
+    );
   };
 
   // Sponsors
@@ -915,13 +963,19 @@ export default function EventDetailPage() {
   };
 
   const handleDeleteSponsor = async (id: string) => {
-    if (!confirm('Excluir este patrocinador?')) return;
-    try {
-      await api.delete(`/events/${eventId}/sponsors/${id}`);
-      loadAll();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao deletar patrocinador.');
-    }
+    openConfirm(
+      'Excluir Patrocinador',
+      'Excluir este patrocinador?',
+      async () => {
+        try {
+          await api.delete(`/events/${eventId}/sponsors/${id}`);
+          loadAll();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao deletar patrocinador.');
+        }
+      },
+      true
+    );
   };
 
   // Schedule Items
@@ -976,13 +1030,19 @@ export default function EventDetailPage() {
   };
 
   const handleDeleteScheduleItem = async (id: string) => {
-    if (!confirm('Remover este item da programação?')) return;
-    try {
-      await api.delete(`/events/${eventId}/schedule/${id}`);
-      loadAll();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao deletar item.');
-    }
+    openConfirm(
+      'Excluir Item de Programação',
+      'Remover este item da programação?',
+      async () => {
+        try {
+          await api.delete(`/events/${eventId}/schedule/${id}`);
+          loadAll();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao deletar item.');
+        }
+      },
+      true
+    );
   };
 
   const openWorkshopModal = (item?: Workshop) => {
@@ -1040,13 +1100,19 @@ export default function EventDetailPage() {
   };
 
   const handleDeleteWorkshop = async (id: string) => {
-    if (!confirm('Remover esta oficina?')) return;
-    try {
-      await api.delete(`/events/${eventId}/workshops/${id}`);
-      loadAll();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Falha ao deletar oficina.');
-    }
+    openConfirm(
+      'Excluir Oficina',
+      'Remover esta oficina?',
+      async () => {
+        try {
+          await api.delete(`/events/${eventId}/workshops/${id}`);
+          loadAll();
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Falha ao deletar oficina.');
+        }
+      },
+      true
+    );
   };
 
   const openEnrollmentsModal = async (workshop: Workshop) => {
@@ -1066,18 +1132,24 @@ export default function EventDetailPage() {
   };
 
   const handleCancelEnrollment = async (workshopId: string, registrationId: string) => {
-    if (!confirm('Deseja realmente remover este participante da oficina?')) return;
-    setEnrollmentsError(null);
-    try {
-      await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${registrationId}`);
-      // Refresh list
-      const response = await api.get(`/events/${eventId}/workshops/${workshopId}/enrollments`);
-      setWorkshopEnrollments(response.data);
-      // Reload workshops list to update remaining spots
-      loadAll();
-    } catch (err: any) {
-      setEnrollmentsError(err.response?.data?.message || 'Falha ao remover participante.');
-    }
+    openConfirm(
+      'Remover da Oficina',
+      'Deseja realmente remover este participante da oficina?',
+      async () => {
+        setEnrollmentsError(null);
+        try {
+          await api.delete(`/events/${eventId}/workshops/${workshopId}/enrollments/${registrationId}`);
+          // Refresh list
+          const response = await api.get(`/events/${eventId}/workshops/${workshopId}/enrollments`);
+          setWorkshopEnrollments(response.data);
+          // Reload workshops list to update remaining spots
+          loadAll();
+        } catch (err: any) {
+          setEnrollmentsError(err.response?.data?.message || 'Falha ao remover participante.');
+        }
+      },
+      true
+    );
   };
 
   // Reordering up/down
@@ -3254,6 +3326,63 @@ export default function EventDetailPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: PREMIUM CONFIRMATION --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+              className="absolute top-4 right-4 text-slate-450 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className={`p-3 rounded-full ${confirmModal.isDestructive ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-violet-500/10 text-violet-400 border border-violet-500/20'}`}>
+                {confirmModal.isDestructive ? (
+                  <AlertTriangle className="h-6 w-6 animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="h-6 w-6" />
+                )}
+              </div>
+              
+              <div className="space-y-1.5">
+                <h3 className="font-extrabold text-white text-base">
+                  {confirmModal.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {confirmModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-bold text-xs py-2.5 rounded-xl border border-slate-750 transition-all duration-150"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className={`w-full text-white font-bold text-xs py-2.5 rounded-xl transition-all duration-150 shadow-lg ${
+                  confirmModal.isDestructive
+                    ? 'bg-red-600 hover:bg-red-750 shadow-red-950/20'
+                    : 'bg-violet-600 hover:bg-violet-750 shadow-violet-950/20'
+                }`}
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}
