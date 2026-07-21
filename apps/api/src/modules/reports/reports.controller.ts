@@ -68,9 +68,10 @@ export class ReportsController {
   async presenceList(
     @Param('eventId') eventId: string,
     @Headers('x-tenant-id') tenantId: string,
+    @Query('workshopId') workshopId: string,
     @Res() res: any,
   ) {
-    const { buffer, eventSlug } = await this.reportsService.generatePresenceListPdf(eventId, tenantId);
+    const { buffer, eventSlug } = await this.reportsService.generatePresenceListPdf(eventId, tenantId, workshopId);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="presence-list-${eventSlug}.pdf"`);

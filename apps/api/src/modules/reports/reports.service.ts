@@ -256,7 +256,7 @@ export class ReportsService {
   /**
    * Generates a presence list PDF with signature lines for confirmed participants.
    */
-  async generatePresenceListPdf(eventId: string, tenantId: string): Promise<{ buffer: Buffer; eventSlug: string }> {
+  async generatePresenceListPdf(eventId: string, tenantId: string, workshopId?: string): Promise<{ buffer: Buffer; eventSlug: string }> {
     // 1. Verify event
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId },
@@ -266,11 +266,29 @@ export class ReportsService {
       throw new NotFoundException('Evento não encontrado.');
     }
 
+    let workshopName = '';
+    if (workshopId) {
+      const workshop = await this.prisma.workshop.findFirst({
+        where: { id: workshopId, eventId },
+      });
+      if (!workshop) {
+        throw new NotFoundException('Oficina não encontrada.');
+      }
+      workshopName = workshop.title;
+    }
+
     // 2. Fetch confirmed registrations sorted alphabetically by name
     const registrations = await this.prisma.registration.findMany({
       where: {
         eventId,
         status: RegistrationStatus.CONFIRMED,
+        ...(workshopId ? {
+          workshopEnrollments: {
+            some: {
+              workshopId,
+            }
+          }
+        } : {}),
       },
       orderBy: { name: 'asc' },
     });
@@ -297,20 +315,26 @@ export class ReportsService {
       });
 
       // Text inside banner
+      const titleText = workshopId 
+        ? `${event.title} - OFICINA: ${workshopName}`
+        : event.title;
+
       currentPage.drawText(
-        this.cleanStringForPdf(event.title.toUpperCase()),
+        this.cleanStringForPdf(titleText.toUpperCase()),
         {
           x: 50,
           y: pageHeight - 55,
-          size: 13,
+          size: workshopId ? 10 : 13,
           font: fontBold,
           color: rgb(0.06, 0.09, 0.16),
         }
       );
 
-      const titleSub = isContinuation
-        ? 'LISTA DE PRESENCA (CONTINUACAO) - PAGINA ' + pageNum
-        : 'LISTA DE PRESENCA - TOTAL DE CONFIRMADOS: ' + registrations.length;
+      const titleSub = workshopId
+        ? `LISTA DE PRESENCA (OFICINA) - INSCRITOS: ${registrations.length}${isContinuation ? ` - PAGINA ${pageNum}` : ''}`
+        : isContinuation
+          ? 'LISTA DE PRESENCA (CONTINUACAO) - PAGINA ' + pageNum
+          : 'LISTA DE PRESENCA - TOTAL DE CONFIRMADOS: ' + registrations.length;
 
       currentPage.drawText(titleSub, {
         x: 50,

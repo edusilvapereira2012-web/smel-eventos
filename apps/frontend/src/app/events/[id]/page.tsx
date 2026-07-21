@@ -301,11 +301,12 @@ export default function EventDetailPage() {
     }
   };
 
-  const handlePresenceListPdf = async () => {
+  const handlePresenceListPdf = async (workshopId?: string) => {
     try {
       setPresenceListLoading(true);
       setError(null);
       const res = await api.get(`/reports/events/${eventId}/presence-list`, {
+        params: { workshopId },
         responseType: 'blob',
       });
       const file = new Blob([res.data], { type: 'application/pdf' });
@@ -1767,7 +1768,7 @@ export default function EventDetailPage() {
                   <span>Exportar CSV</span>
                 </Button>
                 <Button
-                  onClick={handlePresenceListPdf}
+                  onClick={() => handlePresenceListPdf()}
                   disabled={presenceListLoading}
                   className="bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs py-2 px-4 rounded-lg flex items-center space-x-2"
                 >
@@ -2699,17 +2700,27 @@ export default function EventDetailPage() {
               <X className="h-5 w-5" />
             </button>
             
-            <div className="flex-shrink-0 space-y-1">
-              <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
-                <Users className="h-5 w-5 text-violet-500" />
-                Participantes da Oficina
-              </h3>
-              <p className="text-xs text-violet-400 font-extrabold">
-                {selectedWorkshop.title}
-              </p>
-              <p className="text-[10px] text-slate-500">
-                {new Date(selectedWorkshop.startTime).toLocaleDateString('pt-BR')} • {new Date(selectedWorkshop.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedWorkshop.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0 border-b border-slate-850 pb-3">
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5 text-violet-500" />
+                  Participantes da Oficina
+                </h3>
+                <p className="text-xs text-violet-400 font-extrabold">
+                  {selectedWorkshop.title}
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  {new Date(selectedWorkshop.startTime).toLocaleDateString('pt-BR')} • {new Date(selectedWorkshop.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedWorkshop.endTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+              <Button
+                onClick={() => handlePresenceListPdf(selectedWorkshop.id)}
+                disabled={presenceListLoading}
+                className="bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs py-2 px-3 rounded-lg flex items-center space-x-1.5 self-start sm:self-auto"
+              >
+                {presenceListLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                <span>Lista (PDF)</span>
+              </Button>
             </div>
 
             {enrollmentsError && (
