@@ -77,20 +77,30 @@ smel-plataforma-eventos/
 
 ---
 
+## 🛡️ Destaques de Arquitetura & Segurança
+
+- **Validação Estrita de Produção**: Schema Zod (`apps/api/src/config/env.schema.ts`) com `superRefine` bloqueia a API caso segredos de criptografia (`ENCRYPTION_KEY` e `QR_SECRET`) utilizem valores default em `NODE_ENV=production`.
+- **Criptografia LGPD**: Criptografia simétrica `AES-256-GCM` para campos sensíveis (como CPF) e *Blind Index* (`HMAC-SHA256`) para prevenção determinística de inscrições duplicadas.
+- **Padrão Visual de Paginação**: Tabelas com rodapé unificado contendo o indicador **`Página X`** e controles estilizados **`< Anterior`** e **`Próximo >`**.
+- **Deploy Otimizado para VPS**: Script em `infra/deploy.sh` com exclusões estritas (`.turbo`, `node_modules`, `dist`, `.next`) enviando pacotes ultraleves de apenas ~10 MB para a VPS.
+
+---
+
 ## 🛠️ Comandos de Qualidade e Operação
 
 * **Instalar Dependências**: `pnpm install`
 * **Iniciar Workspace**: `pnpm run dev`
 * **Compilar Aplicações (Build)**: `pnpm run build`
-* **Executar Suíte de Testes**: `pnpm run test`
+* **Executar Suíte de Testes**: `pnpm run test` (101 testes passando)
 * **Linter de Código**: `pnpm run lint`
-* **Execução em Produção via PM2**: `pm2 start ecosystem.config.js`
+* **Executar Deploy Automatizado**: `python3 infra/run_deploy.py`
 
 ---
 
-## 🌐 Endereços de Acesso Local
+## 🌐 Endereços de Acesso Local e Produção
 
-* **Frontend Principal**: [http://localhost](http://localhost)
-* **Documentação Swagger (API)**: [http://localhost/api/docs](http://localhost/api/docs)
+* **Produção (VPS)**: [https://eventos.valterpcjria.com.br](https://eventos.valterpcjria.com.br)
+* **Frontend Local**: [http://localhost](http://localhost)
+* **Documentação Swagger (API Local)**: [http://localhost/api/docs](http://localhost/api/docs)
 * **Painel Administrativo MinIO**: [http://localhost:9001](http://localhost:9001) (usuário: `minio_admin`, senha: `minio_secret_key_123`)
 * **Painel de Emails Transacionais (Frontend)**: [http://localhost/admin/email/logs](http://localhost/admin/email/logs)

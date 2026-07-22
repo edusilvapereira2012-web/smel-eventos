@@ -100,7 +100,18 @@ O proxy reverso no Nginx redireciona as conexões externas para os serviços int
 - `/api/*` redirecionado para a API NestJS (`http://api:3001`).
 - `/*` redirecionado para o servidor Next.js (`http://frontend:3000`).
 
-### 3.3. Backup e Manutenção do Banco
+### 3.4. Execução de Deploy Automatizado na VPS
+Para atualizar o ambiente de produção na VPS (`administrator@190.2.72.72`) de forma automática:
+```bash
+# Executa o script de deploy automatizado com pexpect
+python3 infra/run_deploy.py
+```
+*Este comando gera um pacote ultraleve (~10 MB), envia para o servidor via SCP, reconstrói os contêineres Docker e roda as migrações Prisma.*
+
+### 3.5. Padronização de Componentes de Interface (UI)
+- **Paginação de Tabelas**: Todas as listas paginadas (Inscrições, Certificados, Logs de E-mail) devem obrigatoriamente utilizar o rodapé com o indicador **`Página X`** no lado esquerdo e os botões estilizados **`< Anterior`** e **`Próximo >`** no lado direito.
+
+### 3.6. Backup e Manutenção do Banco
 O script de backup de banco de dados e arquivos MinIO está implementado no repositório. Para executar backups manuais:
 ```bash
 # Executar script de backup do banco e do S3

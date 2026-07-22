@@ -24,13 +24,31 @@ Diretrizes de desenvolvimento, comandos e regras de comunicação para o monorep
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 🛠️ Stack Tecnológica & Arquitetura
 
-* **Monorepo**: pnpm Workspaces + Turborepo
-* **Frontend**: Next.js 14 + TypeScript + Tailwind + shadcn/ui
-* **API / Backend**: NestJS + Prisma + PostgreSQL + Redis (Valkey)
-* **Worker**: NestJS (isolado para BullMQ, sem servidor HTTP)
-* **Infra**: Docker, NGINX (Proxy Reverso), MinIO (S3 local)
+### Frontend (`apps/frontend`)
+* **Framework**: Next.js 14 (App Router) + TypeScript (`strict: true`).
+* **Estilização & UI**: Tailwind CSS (Dark Mode com Glassmorphism) + Lucide Icons + shadcn/ui.
+* **Recursos**: PWA (Service Worker para suporte e credenciamento offline com IndexedDB/Dexie.js), Socket.io Client para métricas de check-in ao vivo.
+* **Padrão de Paginação**: Paginação por cursor padronizada no rodapé de tabelas (`Página X` no lado esquerdo, botões `< Anterior` e `Próximo >` no lado direito).
+
+### Backend & API (`apps/api`)
+* **Framework**: NestJS + TypeScript + Prisma ORM + PostgreSQL 16.
+* **Fila & Cache**: Redis (Valkey 7) + BullMQ para envio assíncrono de e-mails, PDFs e notificações.
+* **Segurança & LGPD**:
+  - Criptografia simétrica `AES-256-GCM` para campos sensíveis (como CPF).
+  - *Blind Index* (`HMAC-SHA256`) para prevenção determinística de duplicidade.
+  - Validação estrita de variáveis de ambiente com Zod (`env.schema.ts` com `superRefine` bloqueando chaves padrão em `NODE_ENV=production`).
+  - RBAC refinado por Tenant (`OWNER`, `ADMIN`, `ORGANIZER`, `CHECKER`, `MEMBER`, `SUPERADMIN`) + Logger não-bloqueante (`Pino`).
+  - Rate Limiting contextual (`CustomThrottlerGuard`).
+
+### Worker (`apps/worker`)
+* Service worker NestJS isolado (sem servidor HTTP) para consumo exclusivo das filas do BullMQ.
+
+### Infraestrutura & Deploy (`infra/`)
+* Docker Compose (`docker-compose.prod.yml`) + Proxy Reverso Nginx + MinIO (S3 local).
+* Script de deploy otimizado (`infra/deploy.sh`) compactando apenas código-fonte (~10 MB, excluindo `.turbo`, `dist`, `.next` e `node_modules`).
+* Automação via pexpect em `infra/run_deploy.py` para deploy seguro na VPS de produção (`190.2.72.72`).
 
 ---
 
@@ -42,6 +60,7 @@ Diretrizes de desenvolvimento, comandos e regras de comunicação para o monorep
 4. **Foco em Metas**: Defina critérios de sucesso e valide a cada passo.
 5. **Tipagem Estrita**: TypeScript com `strict: true`. Evite `any`.
 6. **Segurança**: Sem segredos hardcoded. Sempre use `process.env` validado com Zod.
+7. **Padrão de Paginação**: Sempre utilize a paginação padronizada no rodapé com indicador `Página X` e controles `< Anterior` / `Próximo >`.
 
 ---
 
@@ -50,3 +69,4 @@ Diretrizes de desenvolvimento, comandos e regras de comunicação para o monorep
 * **Respostas ultra-concisas**: Apenas o código, comandos e explicações em tópicos fragmentados.
 * **Sem enrolação/fillers**: Evite introduções ("Certamente...", "Aqui está...", "Com base em...") e conclusões educadas.
 * **Direto ao ponto**: Vá direto ao arquivo e ao código modificado.
+
