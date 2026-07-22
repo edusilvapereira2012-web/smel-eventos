@@ -188,6 +188,8 @@ export default function EventDetailPage() {
   const [regLoading, setRegLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [presenceListLoading, setPresenceListLoading] = useState(false);
+  const [regPageIndex, setRegPageIndex] = useState(0);
+  const [regCursors, setRegCursors] = useState<(string | null)[]>([null]);
 
   // --- WORKSHOP ENROLLMENTS MODAL STATE ---
   const [enrollmentsModalOpen, setEnrollmentsModalOpen] = useState(false);
@@ -271,7 +273,7 @@ export default function EventDetailPage() {
     setTransferData((prev) => ({ ...prev, phone: value }));
   };
 
-  const loadRegistrations = async (reset = false, cursorValue?: string) => {
+  const loadRegistrations = async (pageIdx = 0, cursorValue?: string | null) => {
     try {
       setRegLoading(true);
       setError(null);
@@ -281,12 +283,19 @@ export default function EventDetailPage() {
       if (cursorValue) paramsObj.cursor = cursorValue;
 
       const res = await api.get(`/events/${eventId}/registrations`, { params: paramsObj });
-      if (reset || !cursorValue) {
-        setRegistrations(res.data.data);
-      } else {
-        setRegistrations((prev) => [...prev, ...res.data.data]);
+      setRegistrations(res.data.data || []);
+      setNextCursor(res.data.nextCursor || null);
+      setRegPageIndex(pageIdx);
+
+      if (pageIdx === 0) {
+        setRegCursors([null, res.data.nextCursor || null]);
+      } else if (res.data.nextCursor) {
+        setRegCursors((prev) => {
+          const nextCursors = [...prev];
+          nextCursors[pageIdx + 1] = res.data.nextCursor;
+          return nextCursors;
+        });
       }
-      setNextCursor(res.data.nextCursor);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Falha ao carregar inscrições.');
     } finally {
@@ -548,7 +557,7 @@ export default function EventDetailPage() {
 
   useEffect(() => {
     if (activeTenant && eventId && activeTab === 'registrations') {
-      loadRegistrations(true);
+      loadRegistrations(0, null);
     }
   }, [activeTenant, eventId, activeTab, regStatus]);
 
@@ -2045,18 +2054,30 @@ export default function EventDetailPage() {
                   </table>
                 </div>
 
-                {nextCursor && (
-                  <div className="p-4 border-t border-slate-900 bg-slate-950/20 text-center">
+                {/* Paginação Padrão */}
+                <div className="flex items-center justify-between border-t border-slate-900/40 p-4 text-xs text-slate-450 bg-slate-950/20">
+                  <div>
+                    Página <span className="font-bold text-white">{regPageIndex + 1}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <Button
-                      onClick={() => loadRegistrations(false, nextCursor)}
-                      disabled={regLoading}
-                      className="bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs py-2 px-6 rounded-lg"
+                      onClick={() => loadRegistrations(regPageIndex - 1, regCursors[regPageIndex - 1])}
+                      disabled={regPageIndex === 0 || regLoading}
+                      className="bg-slate-900 hover:bg-slate-850 disabled:bg-slate-950 text-slate-350 hover:text-white border border-slate-850 disabled:border-slate-900 font-bold text-2xs py-1.5 px-3 rounded-lg transition inline-flex items-center space-x-1"
                     >
-                      {regLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Carregar Mais
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                      <span>Anterior</span>
+                    </Button>
+                    <Button
+                      onClick={() => loadRegistrations(regPageIndex + 1, nextCursor)}
+                      disabled={!nextCursor || regLoading}
+                      className="bg-slate-900 hover:bg-slate-850 disabled:bg-slate-950 text-slate-350 hover:text-white border border-slate-850 disabled:border-slate-900 font-bold text-2xs py-1.5 px-3 rounded-lg transition inline-flex items-center space-x-1"
+                    >
+                      <span>Próximo</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
