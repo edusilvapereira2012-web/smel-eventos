@@ -385,7 +385,7 @@ export default function EventDetailPage() {
       setTransferModalOpen(false);
       setTransferData({ name: '', email: '', cpf: '', phone: '' });
       setSuccess('Inscrição transferida com sucesso.');
-      loadRegistrations(true);
+      loadRegistrations(0, null);
       loadAll();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message;
@@ -410,7 +410,7 @@ export default function EventDetailPage() {
       setCancelRegModalOpen(false);
       setCancelRegReason('');
       setSuccess('Inscrição cancelada com sucesso.');
-      loadRegistrations(true);
+      loadRegistrations(0, null);
       loadAll();
     } catch (err: any) {
       setCancelRegError(err.response?.data?.message || 'Erro ao cancelar inscrição.');
@@ -426,7 +426,7 @@ export default function EventDetailPage() {
       setSelectedParticipantReg(res.data);
       const workRes = await api.get(`/events/${eventId}/workshops`);
       setWorkshops(workRes.data);
-      loadRegistrations(true);
+      loadRegistrations(0, null);
     } catch (err: any) {
       setManagingWorkshopsError(err.response?.data?.message || 'Falha ao atualizar dados do participante.');
     } finally {
@@ -1913,7 +1913,7 @@ export default function EventDetailPage() {
 
               <div className="flex items-center gap-3">
                 <Button
-                  onClick={() => loadRegistrations(true)}
+                  onClick={() => loadRegistrations(0, null)}
                   variant="ghost"
                   className="text-slate-400 hover:text-white p-2 rounded-lg border border-slate-900 hover:bg-slate-900"
                 >
