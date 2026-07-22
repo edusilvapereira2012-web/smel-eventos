@@ -58,6 +58,7 @@ services:
       - APP_URL=${APP_URL}
       - API_URL=${API_URL}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - QR_SECRET=${QR_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +103,7 @@ services:
       - API_URL=${API_URL}
       - MINIO_EXTERNAL_URL=${MINIO_EXTERNAL_URL}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - QR_SECRET=${QR_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
