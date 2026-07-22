@@ -21,9 +21,14 @@ fi
 # 2. Compacta o monorepo localmente
 echo "📦 Compactando projeto localmente..."
 tar --exclude='.git' \
+    --exclude='.turbo' \
     --exclude='node_modules' \
+    --exclude='*/node_modules' \
+    --exclude='*/*/node_modules' \
     --exclude='dist' \
+    --exclude='*/dist' \
     --exclude='.next' \
+    --exclude='*/.next' \
     --exclude='.env' \
     --exclude='*.log' \
     --exclude='deploy.tar.gz' \
