@@ -178,6 +178,15 @@ Para evitar piscadas de tela, perda de foco ao digitar e fechamento indesejado d
 * **Memoização de Permissões**: A verificação de permissões do usuário logado é feita de forma otimizada em memória. Digitar caracteres em qualquer formulário de criação/edição não aciona recriações de componentes ou novos ciclos de busca ao backend.
 * **Carregamento Otimizado de Categorias**: A tela de categorias possui carregamento síncrono inicial com indicador de processamento visual (loader). Atualizações subsequentes de criação, edição ou deleção ocorrem de forma assíncrona em segundo plano, sem travar ou piscar a interface.
 
+### 8.4. Hardening de Variáveis de Ambiente em Produção (env.schema.ts)
+Para evitar que o sistema seja implantado em servidores de produção com chaves de criptografia padrão ou previsíveis:
+* **Validação Condicional (Zod `superRefine`)**: A inicialização do serviço API valida condicionalmente o ambiente (`NODE_ENV`). Em `development` e `test`, o sistema aceita valores padrão para rápida produtividade local. Em `production`, a API é bloqueada caso as chaves `ENCRYPTION_KEY` e `QR_SECRET` não estejam configuradas com segredos fortes e customizados no arquivo `.env`.
+
+### 8.5. Otimização do Pipeline de Deploy (Compressão Leve)
+Para garantir atualizações ultrarrápidas do sistema na VPS:
+* **Exclusão de Caches e Arquivos Temporários**: O script de deploy (`infra/deploy.sh`) foi otimizado para excluir pastas de build local (`.turbo/cache`, `dist`, `.next`) e dependências aninhadas (`*/node_modules`).
+* **Performance**: O tamanho do pacote de envio foi reduzido de **2.08 GB** para apenas **~10 MB**, reduzindo o tempo de upload no servidor de ~40 segundos para menos de 1 segundo.
+
 ---
 
 ## 9. Especificações de Mídia (Banners de Eventos)
