@@ -1882,7 +1882,7 @@ export default function EventDetailPage() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    loadRegistrations(true);
+                    loadRegistrations(0, null);
                   }}
                   className="flex-1 flex gap-2"
                 >
